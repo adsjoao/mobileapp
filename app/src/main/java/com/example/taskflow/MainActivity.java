@@ -1,0 +1,195 @@
+package com.example.taskflow;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.example.taskflow.adapter.TaskAdapter;
+import com.example.taskflow.data.entity.Task;
+import com.example.taskflow.data.entity.TaskPriority;
+import com.example.taskflow.viewmodel.TaskViewModel;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import java.util.Date;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTaskActionListener {
+
+    private RecyclerView recyclerView;
+    private TaskAdapter taskAdapter;
+    private TaskViewModel taskViewModel;
+    private FloatingActionButton fabAddTask;
+    private TextView tvPendingCount, tvCompletedCount;
+    private ChipGroup chipGroup;
+    private Chip chipAll, chipPending, chipCompleted, chipHighPriority;
+
+    private String currentFilter = "all";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        initViews();
+        setupRecyclerView();
+        setupViewModel();
+        setupObservers();
+        setupClickListeners();
+        setupFilterChips();
+    }
+
+    private void initViews() {
+        recyclerView = findViewById(R.id.recyclerViewTasks);
+        fabAddTask = findViewById(R.id.fabAddTask);
+        tvPendingCount = findViewById(R.id.tvPendingCount);
+        tvCompletedCount = findViewById(R.id.tvCompletedCount);
+        chipGroup = findViewById(R.id.chipGroup);
+
+
+        chipAll = findViewById(R.id.chip_all);
+        chipPending = findViewById(R.id.chip_pending);
+        chipCompleted = findViewById(R.id.chip_completed);
+        chipHighPriority = findViewById(R.id.chip_high_priority);
+    }
+    private void setupRecyclerView() {
+        taskAdapter = new TaskAdapter(this);
+        taskAdapter.setOnTaskActionListener(this);
+        recyclerView.setAdapter(taskAdapter);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+    }
+
+    private void setupViewModel() {
+        taskViewModel = new ViewModelProvider(this).get(TaskViewModel.class);
+    }
+
+    private void setupObservers() {
+        // Observar todas as tarefas
+        taskViewModel.getAllTasks().observe(this, tasks -> {
+            if (tasks != null) {
+                taskAdapter.setTasks(tasks);
+            }
+        });
+
+        // Observar contadores do dashboard
+        taskViewModel.getPendingTasksCount().observe(this, count -> {
+            if (count != null) {
+                tvPendingCount.setText(String.valueOf(count));
+            }
+        });
+
+        taskViewModel.getCompletedTasksCount().observe(this, count -> {
+            if (count != null) {
+                tvCompletedCount.setText(String.valueOf(count));
+            }
+        });
+
+
+    }
+
+    private void setupClickListeners() {
+        fabAddTask.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, AddEditTaskActivity.class);
+            startActivity(intent);
+        });
+
+    }
+
+    private void setupFilterChips() {
+        chipGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.chip_all) {           // Use o ID correto
+                currentFilter = "all";
+                taskViewModel.getAllTasks().observe(this, taskAdapter::setTasks);
+            } else if (checkedId == R.id.chip_pending) { // Use o ID correto
+                currentFilter = "pending";
+                taskViewModel.getPendingTasks().observe(this, taskAdapter::setTasks);
+            } else if (checkedId == R.id.chip_completed) { // Use o ID correto
+                currentFilter = "completed";
+                taskViewModel.getCompletedTasks().observe(this, taskAdapter::setTasks);
+            } else if (checkedId == R.id.chip_high_priority) { // Use o ID correto
+                currentFilter = "high_priority";
+                taskViewModel.getHighPriorityTasks().observe(this, taskAdapter::setTasks);
+            }
+        });
+
+            }
+
+
+
+
+
+    // Implementação da interface TaskAdapter.OnTaskClickListener
+
+    public void onTaskClick(Task task) {
+        Toast.makeText(this, "Clicou na tarefa: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+    }
+
+
+    public void onTaskLongClick(Task task) {
+        Toast.makeText(this, "Clique longo na tarefa: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+    }
+
+
+    public void onCheckboxClick(Task task) {
+        taskViewModel.toggleTaskCompletion(task);
+    }
+
+
+    public void onMenuClick(Task task) {
+        showTaskMenu(task);
+    }
+    @Override
+    public void onTaskCompleteToggle(Task task) {
+        task.setCompleted(!task.isCompleted());
+        if (task.isCompleted()) {
+            task.setCompletedAt(new Date());
+        } else {
+            task.setCompletedAt(null);
+        }
+        taskViewModel.update(task);
+    }
+
+    @Override
+    public void onTaskDelete(Task task) {
+        new AlertDialog.Builder(this)
+                .setTitle("Excluir Tarefa")
+                .setMessage("Tem certeza que deseja excluir esta tarefa?")
+                .setPositiveButton("Sim", (dialog, which) -> {
+                    taskViewModel.delete(task);
+                })
+                .setNegativeButton("Não", null)
+                .show();
+    }
+
+    @Override
+    public void onTaskEdit(Task task) {
+        // Método implementado para satisfazer a interface
+        // A edição real é feita pelo TaskAdapter abrindo AddEditTaskActivity
+    }
+    private void showTaskMenu(Task task) {
+        PopupMenu popup = new PopupMenu(this, findViewById(R.id.btnMenu));
+        popup.getMenuInflater().inflate(R.menu.task_menu, popup.getMenu());
+
+        popup.setOnMenuItemClickListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.action_edit) {
+                Toast.makeText(this, "Editar: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+                return true;
+            } else if (itemId == R.id.action_delete) {
+                taskViewModel.deleteTask(task);
+                return true;
+            } else if (itemId == R.id.action_toggle_status) {
+                taskViewModel.toggleTaskCompletion(task);
+                return true;
+            }
+            return false;
+        });
+        popup.show();
+    }
+}
