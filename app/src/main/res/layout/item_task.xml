@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp">
-
+        <!-- TESTE -->
         <!-- Indicador de Prioridade -->
         <View
             android:id="@+id/priority_indicator"
