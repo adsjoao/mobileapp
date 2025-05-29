@@ -2,7 +2,7 @@ package com.example.taskflow;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.PopupMenu;
+import android.widget.PopupMenu; // IMPORT ADICIONADO
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     }
 
     private void setupObservers() {
-        // Observar todas as tarefas por padrão
+        // Observar todas as tarefas
         taskViewModel.getAllTasks().observe(this, tasks -> {
             if (tasks != null) {
                 taskAdapter.setTasks(tasks);
@@ -117,13 +117,14 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
         });
     }
 
-    // Implementação da interface TaskAdapter.OnTaskActionListener
+    // IMPLEMENTAÇÃO CORRETA DA INTERFACE TaskAdapter.OnTaskActionListener
 
     @Override
     public void onTaskCompleteToggle(Task task) {
+        // Usa o método do ViewModel conforme documentação
         taskViewModel.toggleTaskCompletion(task);
         Toast.makeText(this,
-                task.isCompleted() ? "Tarefa marcada como concluída" : "Tarefa marcada como pendente",
+                task.isCompleted() ? "Tarefa marcada como concluída" : "Tarefa reaberta",
                 Toast.LENGTH_SHORT).show();
     }
 
@@ -131,10 +132,10 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     public void onTaskDelete(Task task) {
         new AlertDialog.Builder(this)
                 .setTitle("Excluir Tarefa")
-                .setMessage("Tem certeza que deseja excluir a tarefa \"" + task.getTitle() + "\"?")
+                .setMessage("Tem certeza que deseja excluir esta tarefa?")
                 .setPositiveButton("Sim", (dialog, which) -> {
-                    taskViewModel.delete(task);
-                    Toast.makeText(this, "Tarefa excluída com sucesso", Toast.LENGTH_SHORT).show();
+                    taskViewModel.deleteTask(task); // Usa método do ViewModel
+                    Toast.makeText(this, "Tarefa excluída", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Não", null)
                 .show();
@@ -142,8 +143,8 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
 
     @Override
     public void onTaskEdit(Task task) {
-        // Este método é chamado pelo adapter quando necessário
-        // A implementação real da edição está no TaskAdapter
+        // Implementação completa do método de edição
+        // Abre a AddEditTaskActivity em modo de edição
         Intent intent = new Intent(this, AddEditTaskActivity.class);
         intent.putExtra(AddEditTaskActivity.EXTRA_TASK_ID, task.getId());
         intent.putExtra(AddEditTaskActivity.EXTRA_TASK_TITLE, task.getTitle());
@@ -152,26 +153,35 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
         startActivity(intent);
     }
 
-    // Métodos auxiliares para compatibilidade (caso sejam chamados de outros lugares)
-    public void onTaskClick(Task task) {
-        Toast.makeText(this, "Tarefa: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+    // MÉTODOS AUXILIARES REMOVIDOS/CORRIGIDOS
+
+    // Método showTaskMenu corrigido - agora recebe a view correta
+    private void showTaskMenu(android.view.View view, Task task) {
+        PopupMenu popup = new PopupMenu(this, view); // View correta passada como parâmetro
+        popup.getMenuInflater().inflate(R.menu.task_menu, popup.getMenu());
+
+        // Ajusta texto do menu baseado no status da tarefa
+        popup.getMenu().findItem(R.id.action_toggle_status)
+                .setTitle(task.isCompleted() ? "Marcar como pendente" : "Marcar como concluída");
+
+        popup.setOnMenuItemClickListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.action_edit) {
+                onTaskEdit(task);
+                return true;
+            } else if (itemId == R.id.action_delete) {
+                onTaskDelete(task);
+                return true;
+            } else if (itemId == R.id.action_toggle_status) {
+                onTaskCompleteToggle(task);
+                return true;
+            }
+            return false;
+        });
+        popup.show();
     }
 
-    public void onTaskLongClick(Task task) {
-        onTaskEdit(task); // Clique longo abre para edição
-    }
-
-    public void onCheckboxClick(Task task) {
-        onTaskCompleteToggle(task);
-    }
-
-    public void onMenuClick(Task task) {
-        showTaskMenu(task);
-    }
-
-    private void showTaskMenu(Task task) {
-        // Nota: Este método precisa de uma view para ancorar o popup
-        // O TaskAdapter já implementa o menu, então este método é opcional
-        Toast.makeText(this, "Menu da tarefa: " + task.getTitle(), Toast.LENGTH_SHORT).show();
-    }
+    // MÉTODOS DESNECESSÁRIOS REMOVIDOS
+    // Os métodos onTaskClick, onTaskLongClick, onCheckboxClick, onMenuClick
+    // foram removidos pois não são necessários com a implementação atual
 }

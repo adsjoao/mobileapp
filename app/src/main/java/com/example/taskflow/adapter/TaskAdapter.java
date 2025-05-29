@@ -7,15 +7,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageButton;
-import com.example.taskflow.data.entity.Task;           // ← ADICIONE ESTE IMPORT
-import com.example.taskflow.data.entity.TaskPriority;  // ← ADICIONE ESTE IMPORT
+import com.example.taskflow.data.entity.Task;
+import com.example.taskflow.data.entity.TaskPriority;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.taskflow.AddEditTaskActivity;
 import com.example.taskflow.R;
-import com.example.taskflow.data.database.TaskDatabase;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -95,16 +94,17 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tvTaskDescription.setVisibility(View.GONE);
             }
 
-// Define a data
+            // Define a data - conforme documentação
             if (task.isCompleted() && task.getCompletedAt() != null) {
                 tvTaskDate.setText("Concluída em: " + dateFormat.format(task.getCompletedAt()));
             } else {
                 tvTaskDate.setText("Criada em: " + dateFormat.format(task.getCreatedAt()));
             }
+
             // Define status de completado
             checkboxCompleted.setChecked(task.isCompleted());
 
-            // Ajusta opacidade para tarefas concluídas
+            // Ajusta opacidade para tarefas concluídas - conforme documentação (60%)
             itemView.setAlpha(task.isCompleted() ? 0.6f : 1.0f);
 
             // Define cor do indicador de prioridade
@@ -128,12 +128,14 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 }
             });
 
-            // Listener para o menu
+            // Listener para o menu - CORRIGIDO: passa a view correta
             btnMenu.setOnClickListener(v -> showPopupMenu(v, task));
 
             // Listener para clique longo no item (edição rápida)
             itemView.setOnLongClickListener(v -> {
-                openEditActivity(task);
+                if (listener != null) {
+                    listener.onTaskEdit(task);
+                }
                 return true;
             });
         }
@@ -149,7 +151,9 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             popup.setOnMenuItemClickListener(item -> {
                 int itemId = item.getItemId();
                 if (itemId == R.id.action_edit) {
-                    openEditActivity(task);
+                    if (listener != null) {
+                        listener.onTaskEdit(task);
+                    }
                     return true;
                 } else if (itemId == R.id.action_delete) {
                     if (listener != null) {
@@ -166,15 +170,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             });
 
             popup.show();
-        }
-
-        private void openEditActivity(Task task) {
-            Intent intent = new Intent(context, AddEditTaskActivity.class);
-            intent.putExtra(AddEditTaskActivity.EXTRA_TASK_ID, task.getId());
-            intent.putExtra(AddEditTaskActivity.EXTRA_TASK_TITLE, task.getTitle());
-            intent.putExtra(AddEditTaskActivity.EXTRA_TASK_DESCRIPTION, task.getDescription());
-            intent.putExtra(AddEditTaskActivity.EXTRA_TASK_PRIORITY, task.getPriority().name());
-            context.startActivity(intent);
         }
     }
 }
