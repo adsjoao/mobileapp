@@ -2,6 +2,7 @@ package com.example.taskflow;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,12 +53,12 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
         tvCompletedCount = findViewById(R.id.tvCompletedCount);
         chipGroup = findViewById(R.id.chipGroup);
 
-
         chipAll = findViewById(R.id.chip_all);
         chipPending = findViewById(R.id.chip_pending);
         chipCompleted = findViewById(R.id.chip_completed);
         chipHighPriority = findViewById(R.id.chip_high_priority);
     }
+
     private void setupRecyclerView() {
         taskAdapter = new TaskAdapter(this);
         taskAdapter.setOnTaskActionListener(this);
@@ -70,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     }
 
     private void setupObservers() {
-        // Observar todas as tarefas
+        // Observar todas as tarefas por padrão
         taskViewModel.getAllTasks().observe(this, tasks -> {
             if (tasks != null) {
                 taskAdapter.setTasks(tasks);
@@ -89,8 +90,6 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
                 tvCompletedCount.setText(String.valueOf(count));
             }
         });
-
-
     }
 
     private void setupClickListeners() {
@@ -98,70 +97,44 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
             Intent intent = new Intent(MainActivity.this, AddEditTaskActivity.class);
             startActivity(intent);
         });
-
     }
 
     private void setupFilterChips() {
         chipGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.chip_all) {           // Use o ID correto
+            if (checkedId == R.id.chip_all) {
                 currentFilter = "all";
                 taskViewModel.getAllTasks().observe(this, taskAdapter::setTasks);
-            } else if (checkedId == R.id.chip_pending) { // Use o ID correto
+            } else if (checkedId == R.id.chip_pending) {
                 currentFilter = "pending";
                 taskViewModel.getPendingTasks().observe(this, taskAdapter::setTasks);
-            } else if (checkedId == R.id.chip_completed) { // Use o ID correto
+            } else if (checkedId == R.id.chip_completed) {
                 currentFilter = "completed";
                 taskViewModel.getCompletedTasks().observe(this, taskAdapter::setTasks);
-            } else if (checkedId == R.id.chip_high_priority) { // Use o ID correto
+            } else if (checkedId == R.id.chip_high_priority) {
                 currentFilter = "high_priority";
                 taskViewModel.getHighPriorityTasks().observe(this, taskAdapter::setTasks);
             }
         });
-
-            }
-
-
-
-
-
-    // Implementação da interface TaskAdapter.OnTaskClickListener
-
-    public void onTaskClick(Task task) {
-        Toast.makeText(this, "Clicou na tarefa: " + task.getTitle(), Toast.LENGTH_SHORT).show();
     }
 
+    // Implementação da interface TaskAdapter.OnTaskActionListener
 
-    public void onTaskLongClick(Task task) {
-        Toast.makeText(this, "Clique longo na tarefa: " + task.getTitle(), Toast.LENGTH_SHORT).show();
-    }
-
-
-    public void onCheckboxClick(Task task) {
-        taskViewModel.toggleTaskCompletion(task);
-    }
-
-
-    public void onMenuClick(Task task) {
-        showTaskMenu(task);
-    }
     @Override
     public void onTaskCompleteToggle(Task task) {
-        task.setCompleted(!task.isCompleted());
-        if (task.isCompleted()) {
-            task.setCompletedAt(new Date());
-        } else {
-            task.setCompletedAt(null);
-        }
-        taskViewModel.update(task);
+        taskViewModel.toggleTaskCompletion(task);
+        Toast.makeText(this,
+                task.isCompleted() ? "Tarefa marcada como concluída" : "Tarefa marcada como pendente",
+                Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onTaskDelete(Task task) {
         new AlertDialog.Builder(this)
                 .setTitle("Excluir Tarefa")
-                .setMessage("Tem certeza que deseja excluir esta tarefa?")
+                .setMessage("Tem certeza que deseja excluir a tarefa \"" + task.getTitle() + "\"?")
                 .setPositiveButton("Sim", (dialog, which) -> {
                     taskViewModel.delete(task);
+                    Toast.makeText(this, "Tarefa excluída com sucesso", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Não", null)
                 .show();
@@ -169,27 +142,36 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
 
     @Override
     public void onTaskEdit(Task task) {
-        // Método implementado para satisfazer a interface
-        // A edição real é feita pelo TaskAdapter abrindo AddEditTaskActivity
+        // Este método é chamado pelo adapter quando necessário
+        // A implementação real da edição está no TaskAdapter
+        Intent intent = new Intent(this, AddEditTaskActivity.class);
+        intent.putExtra(AddEditTaskActivity.EXTRA_TASK_ID, task.getId());
+        intent.putExtra(AddEditTaskActivity.EXTRA_TASK_TITLE, task.getTitle());
+        intent.putExtra(AddEditTaskActivity.EXTRA_TASK_DESCRIPTION, task.getDescription());
+        intent.putExtra(AddEditTaskActivity.EXTRA_TASK_PRIORITY, task.getPriority().name());
+        startActivity(intent);
     }
-    private void showTaskMenu(Task task) {
-        PopupMenu popup = new PopupMenu(this, findViewById(R.id.btnMenu));
-        popup.getMenuInflater().inflate(R.menu.task_menu, popup.getMenu());
 
-        popup.setOnMenuItemClickListener(item -> {
-            int itemId = item.getItemId();
-            if (itemId == R.id.action_edit) {
-                Toast.makeText(this, "Editar: " + task.getTitle(), Toast.LENGTH_SHORT).show();
-                return true;
-            } else if (itemId == R.id.action_delete) {
-                taskViewModel.deleteTask(task);
-                return true;
-            } else if (itemId == R.id.action_toggle_status) {
-                taskViewModel.toggleTaskCompletion(task);
-                return true;
-            }
-            return false;
-        });
-        popup.show();
+    // Métodos auxiliares para compatibilidade (caso sejam chamados de outros lugares)
+    public void onTaskClick(Task task) {
+        Toast.makeText(this, "Tarefa: " + task.getTitle(), Toast.LENGTH_SHORT).show();
+    }
+
+    public void onTaskLongClick(Task task) {
+        onTaskEdit(task); // Clique longo abre para edição
+    }
+
+    public void onCheckboxClick(Task task) {
+        onTaskCompleteToggle(task);
+    }
+
+    public void onMenuClick(Task task) {
+        showTaskMenu(task);
+    }
+
+    private void showTaskMenu(Task task) {
+        // Nota: Este método precisa de uma view para ancorar o popup
+        // O TaskAdapter já implementa o menu, então este método é opcional
+        Toast.makeText(this, "Menu da tarefa: " + task.getTitle(), Toast.LENGTH_SHORT).show();
     }
 }
