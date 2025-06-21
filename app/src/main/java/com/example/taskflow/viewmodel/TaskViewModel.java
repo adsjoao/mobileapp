@@ -7,7 +7,6 @@ import androidx.lifecycle.LiveData;
 import com.example.taskflow.repository.TaskRepository;
 import com.example.taskflow.data.entity.Task;
 import com.example.taskflow.data.entity.TaskPriority;
-import java.util.Date;
 import java.util.List;
 
 public class TaskViewModel extends AndroidViewModel {
@@ -25,7 +24,7 @@ public class TaskViewModel extends AndroidViewModel {
         completedTasksCount = repository.getCompletedTasksCount();
     }
 
-    // Métodos CRUD básicos
+    // Métodos CRUD
     public void insert(Task task) {
         repository.insert(task);
     }
@@ -36,6 +35,11 @@ public class TaskViewModel extends AndroidViewModel {
 
     public void delete(Task task) {
         repository.delete(task);
+    }
+
+    // Buscar tarefa por ID
+    public LiveData<Task> getTaskById(long id) {
+        return repository.getTaskById(id);
     }
 
     // Getters para LiveData
@@ -61,29 +65,5 @@ public class TaskViewModel extends AndroidViewModel {
 
     public LiveData<Integer> getCompletedTasksCount() {
         return completedTasksCount;
-    }
-
-    // MÉTODOS ADICIONAIS MENCIONADOS NA DOCUMENTAÇÃO
-
-    /**
-     * Alterna o status de conclusão de uma tarefa
-     * Conforme documentado nas regras de negócio
-     */
-    public void toggleTaskCompletion(Task task) {
-        task.setCompleted(!task.isCompleted());
-        if (task.isCompleted()) {
-            task.setCompletedAt(new Date());
-        } else {
-            task.setCompletedAt(null);
-        }
-        update(task);
-    }
-
-    /**
-     * Método de conveniência para deletar tarefa
-     * Usado pela MainActivity conforme documentação
-     */
-    public void deleteTask(Task task) {
-        delete(task);
     }
 }

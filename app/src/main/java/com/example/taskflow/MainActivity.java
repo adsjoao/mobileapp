@@ -2,7 +2,6 @@ package com.example.taskflow;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.PopupMenu; // IMPORT ADICIONADO
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -117,15 +116,17 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
         });
     }
 
-    // IMPLEMENTAÇÃO CORRETA DA INTERFACE TaskAdapter.OnTaskActionListener
-
+    // Implementação da interface TaskAdapter.OnTaskActionListener
     @Override
     public void onTaskCompleteToggle(Task task) {
-        // Usa o método do ViewModel conforme documentação
-        taskViewModel.toggleTaskCompletion(task);
-        Toast.makeText(this,
-                task.isCompleted() ? "Tarefa marcada como concluída" : "Tarefa reaberta",
-                Toast.LENGTH_SHORT).show();
+        task.setCompleted(!task.isCompleted());
+        if (task.isCompleted()) {
+            task.setCompletedAt(new Date());
+        } else {
+            task.setCompletedAt(null);
+        }
+        taskViewModel.update(task);
+        Toast.makeText(this, task.isCompleted() ? "Tarefa concluída" : "Tarefa reaberta", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -134,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
                 .setTitle("Excluir Tarefa")
                 .setMessage("Tem certeza que deseja excluir esta tarefa?")
                 .setPositiveButton("Sim", (dialog, which) -> {
-                    taskViewModel.deleteTask(task); // Usa método do ViewModel
+                    taskViewModel.delete(task);
                     Toast.makeText(this, "Tarefa excluída", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Não", null)
@@ -143,8 +144,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
 
     @Override
     public void onTaskEdit(Task task) {
-        // Implementação completa do método de edição
-        // Abre a AddEditTaskActivity em modo de edição
+        // Implementação correta para editar tarefa
         Intent intent = new Intent(this, AddEditTaskActivity.class);
         intent.putExtra(AddEditTaskActivity.EXTRA_TASK_ID, task.getId());
         intent.putExtra(AddEditTaskActivity.EXTRA_TASK_TITLE, task.getTitle());
@@ -152,36 +152,4 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
         intent.putExtra(AddEditTaskActivity.EXTRA_TASK_PRIORITY, task.getPriority().name());
         startActivity(intent);
     }
-
-    // MÉTODOS AUXILIARES REMOVIDOS/CORRIGIDOS
-
-    // Método showTaskMenu corrigido - agora recebe a view correta
-    private void showTaskMenu(android.view.View view, Task task) {
-        PopupMenu popup = new PopupMenu(this, view); // View correta passada como parâmetro
-        popup.getMenuInflater().inflate(R.menu.task_menu, popup.getMenu());
-
-        // Ajusta texto do menu baseado no status da tarefa
-        popup.getMenu().findItem(R.id.action_toggle_status)
-                .setTitle(task.isCompleted() ? "Marcar como pendente" : "Marcar como concluída");
-
-        popup.setOnMenuItemClickListener(item -> {
-            int itemId = item.getItemId();
-            if (itemId == R.id.action_edit) {
-                onTaskEdit(task);
-                return true;
-            } else if (itemId == R.id.action_delete) {
-                onTaskDelete(task);
-                return true;
-            } else if (itemId == R.id.action_toggle_status) {
-                onTaskCompleteToggle(task);
-                return true;
-            }
-            return false;
-        });
-        popup.show();
-    }
-
-    // MÉTODOS DESNECESSÁRIOS REMOVIDOS
-    // Os métodos onTaskClick, onTaskLongClick, onCheckboxClick, onMenuClick
-    // foram removidos pois não são necessários com a implementação atual
 }
