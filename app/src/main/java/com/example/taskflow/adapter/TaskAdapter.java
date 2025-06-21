@@ -5,16 +5,18 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import com.example.taskflow.data.entity.Task;
-import com.example.taskflow.data.entity.TaskPriority;
+import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.taskflow.AddEditTaskActivity;
 import com.example.taskflow.R;
+import com.example.taskflow.data.entity.Task;
+import com.example.taskflow.data.entity.TaskPriority;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -69,7 +71,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     class TaskViewHolder extends RecyclerView.ViewHolder {
         private TextView tvTaskTitle, tvTaskDescription, tvTaskDate;
-        private CheckBox checkboxCompleted;
+        private FrameLayout checkboxContainer;
+        private ImageView checkboxBackground, checkboxCheck;
         private ImageButton btnMenu;
         private View priorityIndicator;
 
@@ -78,12 +81,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvTaskTitle = itemView.findViewById(R.id.tv_task_title);
             tvTaskDescription = itemView.findViewById(R.id.tv_task_description);
             tvTaskDate = itemView.findViewById(R.id.tv_task_date);
-            checkboxCompleted = itemView.findViewById(R.id.checkbox_completed);
+            checkboxContainer = itemView.findViewById(R.id.checkbox_container);
+            checkboxBackground = itemView.findViewById(R.id.checkbox_background);
+            checkboxCheck = itemView.findViewById(R.id.checkbox_check);
             btnMenu = itemView.findViewById(R.id.btn_menu);
             priorityIndicator = itemView.findViewById(R.id.priority_indicator);
         }
 
         public void bind(Task task) {
+            // Define título
             tvTaskTitle.setText(task.getTitle());
 
             // Mostra ou esconde descrição
@@ -94,50 +100,78 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tvTaskDescription.setVisibility(View.GONE);
             }
 
-            // Define a data - conforme documentação
+            // Define a data
             if (task.isCompleted() && task.getCompletedAt() != null) {
                 tvTaskDate.setText("Concluída em: " + dateFormat.format(task.getCompletedAt()));
             } else {
                 tvTaskDate.setText("Criada em: " + dateFormat.format(task.getCreatedAt()));
             }
 
-            // Define status de completado
-            checkboxCompleted.setChecked(task.isCompleted());
-
-            // Ajusta opacidade para tarefas concluídas - conforme documentação (60%)
-            itemView.setAlpha(task.isCompleted() ? 0.6f : 1.0f);
-
             // Define cor do indicador de prioridade
             int priorityColor;
             switch (task.getPriority()) {
                 case HIGH:
-                    priorityColor = itemView.getContext().getColor(R.color.priority_high);
+                    priorityColor = ContextCompat.getColor(context, R.color.priority_high);
                     break;
                 case LOW:
-                    priorityColor = itemView.getContext().getColor(R.color.priority_low);
+                    priorityColor = ContextCompat.getColor(context, R.color.priority_low);
                     break;
                 default:
-                    priorityColor = itemView.getContext().getColor(R.color.priority_medium);
+                    priorityColor = ContextCompat.getColor(context, R.color.priority_medium);
             }
             priorityIndicator.setBackgroundColor(priorityColor);
 
+            // Atualiza aparência do checkbox customizado
+            updateCheckboxAppearance(task.isCompleted());
+
+            // Aplica estilo visual baseado no status da tarefa
+            applyTaskCompletionStyle(task.isCompleted());
+
             // Listener para o checkbox
-            checkboxCompleted.setOnClickListener(v -> {
+            checkboxContainer.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onTaskCompleteToggle(task);
                 }
             });
 
-            // Listener para o menu - CORRIGIDO: passa a view correta
+            // Listener para o menu
             btnMenu.setOnClickListener(v -> showPopupMenu(v, task));
 
             // Listener para clique longo no item (edição rápida)
             itemView.setOnLongClickListener(v -> {
-                if (listener != null) {
-                    listener.onTaskEdit(task);
-                }
+                openEditActivity(task);
                 return true;
             });
+        }
+
+        private void updateCheckboxAppearance(boolean isCompleted) {
+            if (isCompleted) {
+                checkboxBackground.setSelected(true);
+                checkboxCheck.setVisibility(View.VISIBLE);
+            } else {
+                checkboxBackground.setSelected(false);
+                checkboxCheck.setVisibility(View.GONE);
+            }
+        }
+
+        private void applyTaskCompletionStyle(boolean isCompleted) {
+            if (isCompleted) {
+                // Estilo para tarefa concluída
+                itemView.setAlpha(0.7f);
+                tvTaskTitle.setTextColor(ContextCompat.getColor(context, R.color.task_completed_text));
+                tvTaskDescription.setTextColor(ContextCompat.getColor(context, R.color.task_completed_text));
+
+                // Adiciona efeito riscado no título
+                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+            } else {
+                // Estilo para tarefa pendente
+                itemView.setAlpha(1.0f);
+                tvTaskTitle.setTextColor(ContextCompat.getColor(context, R.color.task_pending_text));
+                tvTaskDescription.setTextColor(ContextCompat.getColor(context, R.color.task_pending_text));
+
+                // Remove efeito riscado
+                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() & (~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG));
+            }
         }
 
         private void showPopupMenu(View view, Task task) {
@@ -151,9 +185,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             popup.setOnMenuItemClickListener(item -> {
                 int itemId = item.getItemId();
                 if (itemId == R.id.action_edit) {
-                    if (listener != null) {
-                        listener.onTaskEdit(task);
-                    }
+                    openEditActivity(task);
                     return true;
                 } else if (itemId == R.id.action_delete) {
                     if (listener != null) {
@@ -170,6 +202,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             });
 
             popup.show();
+        }
+
+        private void openEditActivity(Task task) {
+            Intent intent = new Intent(context, AddEditTaskActivity.class);
+            intent.putExtra(AddEditTaskActivity.EXTRA_TASK_ID, task.getId());
+            intent.putExtra(AddEditTaskActivity.EXTRA_TASK_TITLE, task.getTitle());
+            intent.putExtra(AddEditTaskActivity.EXTRA_TASK_DESCRIPTION, task.getDescription());
+            intent.putExtra(AddEditTaskActivity.EXTRA_TASK_PRIORITY, task.getPriority().name());
+            context.startActivity(intent);
         }
     }
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Cor sólida que será alterada dinamicamente pelo código -->
+    <solid android:color="@color/priority_medium" />
+    <!-- Cantos arredondados -->
+    <corners android:radius="4dp" />
+</shape>

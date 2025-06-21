@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arquivo: app/src/main/res/drawable/custom_checkbox_selector.xml -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Checkbox marcado (tarefa concluída) -->
+    <item android:state_checked="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="4dp" />
+            <solid android:color="@color/checkbox_checked_bg" />
+            <stroke
+                android:width="2dp"
+                android:color="@color/checkbox_checked_border" />
+        </shape>
+    </item>
+
+    <!-- Checkbox desmarcado (tarefa pendente) -->
+    <item android:state_checked="false">
+        <shape android:shape="rectangle">
+            <corners android:radius="4dp" />
+            <solid android:color="@android:color/transparent" />
+            <stroke
+                android:width="2dp"
+                android:color="@color/checkbox_unchecked_border" />
+        </shape>
+    </item>
+
+    <!-- Estado padrão -->
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="4dp" />
+            <solid android:color="@android:color/transparent" />
+            <stroke
+                android:width="2dp"
+                android:color="@color/checkbox_unchecked_border" />
+        </shape>
+    </item>
+
+</selector>

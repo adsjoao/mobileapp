@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp">
-        <!-- TESTE -->
+
         <!-- Indicador de Prioridade -->
         <View
             android:id="@+id/priority_indicator"
@@ -21,13 +21,32 @@
             android:layout_marginEnd="12dp"
             android:background="@color/priority_medium" />
 
-        <!-- Checkbox -->
-        <CheckBox
-            android:id="@+id/checkbox_completed"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <!-- Checkbox customizado -->
+        <FrameLayout
+            android:id="@+id/checkbox_container"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:layout_gravity="center_vertical"
-            android:layout_marginEnd="12dp" />
+            android:layout_marginEnd="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless">
+
+            <ImageView
+                android:id="@+id/checkbox_background"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:background="@drawable/custom_checkbox_selector" />
+
+            <ImageView
+                android:id="@+id/checkbox_check"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_check_white"
+                android:visibility="gone" />
+
+        </FrameLayout>
 
         <!-- Conteúdo da Tarefa -->
         <LinearLayout
@@ -43,7 +62,7 @@
                 android:text="Título da Tarefa"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black" />
+                android:textColor="@color/task_pending_text" />
 
             <TextView
                 android:id="@+id/tv_task_description"
@@ -52,6 +71,7 @@
                 android:text="Descrição da tarefa"
                 android:textSize="14sp"
                 android:layout_marginTop="4dp"
+                android:textColor="@color/task_pending_text"
                 android:visibility="gone" />
 
             <TextView

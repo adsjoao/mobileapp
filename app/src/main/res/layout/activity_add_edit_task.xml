@@ -70,33 +70,44 @@
                 android:id="@+id/rg_priority"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:orientation="vertical"
                 android:layout_marginBottom="32dp">
 
                 <RadioButton
                     android:id="@+id/rb_high"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Alta"
-                    android:textColor="@color/priority_high" />
+                    android:layout_marginBottom="12dp"
+                    android:text="  Alta Prioridade"
+                    android:textColor="@color/priority_high"
+                    android:textSize="16sp"
+                    android:drawableLeft="@drawable/priority_circle_high"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical" />
 
                 <RadioButton
                     android:id="@+id/rb_medium"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Média"
+                    android:layout_marginBottom="12dp"
+                    android:text="  Média Prioridade"
                     android:textColor="@color/priority_medium"
+                    android:textSize="16sp"
+                    android:drawableLeft="@drawable/priority_circle_medium"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical"
                     android:checked="true" />
 
                 <RadioButton
                     android:id="@+id/rb_low"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Baixa"
-                    android:textColor="@color/priority_low" />
+                    android:text="  Baixa Prioridade"
+                    android:textColor="@color/priority_low"
+                    android:textSize="16sp"
+                    android:drawableLeft="@drawable/priority_circle_low"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical" />
 
             </RadioGroup>
 
