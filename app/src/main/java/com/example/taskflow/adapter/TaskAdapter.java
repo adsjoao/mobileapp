@@ -2,6 +2,7 @@ package com.example.taskflow.adapter;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,7 +13,6 @@ import com.example.taskflow.data.entity.TaskPriority;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.taskflow.AddEditTaskActivity;
 import com.example.taskflow.R;
@@ -22,14 +22,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.TimeZone;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
     private List<Task> tasks = new ArrayList<>();
     private OnTaskActionListener listener;
     private Context context;
-    private SimpleDateFormat dateFormat;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
 
     public interface OnTaskActionListener {
         void onTaskCompleteToggle(Task task);
@@ -39,9 +38,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     public TaskAdapter(Context context) {
         this.context = context;
-        // Configurar formatador de data para fuso horário brasileiro
-        this.dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("pt", "BR"));
-        this.dateFormat.setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"));
     }
 
     public void setOnTaskActionListener(OnTaskActionListener listener) {
@@ -67,16 +63,9 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         return tasks.size();
     }
 
-    public void setTasks(List<Task> newTasks) {
-        if (newTasks == null) {
-            newTasks = new ArrayList<>();
-        }
-
-        // Usar DiffUtil para atualizações mais eficientes
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new TaskDiffCallback(this.tasks, newTasks));
-        this.tasks.clear();
-        this.tasks.addAll(newTasks);
-        diffResult.dispatchUpdatesTo(this);
+    public void setTasks(List<Task> tasks) {
+        this.tasks = tasks;
+        notifyDataSetChanged();
     }
 
     class TaskViewHolder extends RecyclerView.ViewHolder {
@@ -84,7 +73,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         private CheckBox checkboxCompleted;
         private ImageButton btnMenu;
         private View priorityIndicator;
-        private boolean isBinding = false; // Flag para evitar loops
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -97,78 +85,52 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
         public void bind(Task task) {
-            isBinding = true; // Sinaliza que estamos fazendo bind
-
             tvTaskTitle.setText(task.getTitle());
 
             // Mostra ou esconde descrição
-            if (task.getDescription() != null && !task.getDescription().trim().isEmpty()) {
+            if (task.getDescription() != null && !task.getDescription().isEmpty()) {
                 tvTaskDescription.setText(task.getDescription());
                 tvTaskDescription.setVisibility(View.VISIBLE);
             } else {
                 tvTaskDescription.setVisibility(View.GONE);
             }
 
-            // Define a data com fuso horário correto
+            // Define a data
             if (task.isCompleted() && task.getCompletedAt() != null) {
                 tvTaskDate.setText("Concluída em: " + dateFormat.format(task.getCompletedAt()));
-            } else if (task.getCreatedAt() != null) {
-                tvTaskDate.setText("Criada em: " + dateFormat.format(task.getCreatedAt()));
             } else {
-                tvTaskDate.setText("Data não disponível");
+                tvTaskDate.setText("Criada em: " + dateFormat.format(task.getCreatedAt()));
             }
 
-            // Define status de completado SEM disparar listener
-            checkboxCompleted.setOnCheckedChangeListener(null);
+            // Define status de completado
             checkboxCompleted.setChecked(task.isCompleted());
 
-            // Ajusta visual para tarefas concluídas
-            updateTaskVisualState(task);
+            // CORREÇÃO: Aplica estilo visual para tarefas concluídas sem afetar o botão de menu
+            if (task.isCompleted()) {
+                // Aplica opacidade apenas aos textos
+                tvTaskTitle.setAlpha(0.6f);
+                tvTaskDescription.setAlpha(0.6f);
+                tvTaskDate.setAlpha(0.6f);
+                priorityIndicator.setAlpha(0.6f);
+
+                // Adiciona efeito riscado no título
+                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+
+                // Mantém o botão de menu com opacidade normal
+                btnMenu.setAlpha(1.0f);
+            } else {
+                // Remove opacidade e efeito riscado
+                tvTaskTitle.setAlpha(1.0f);
+                tvTaskDescription.setAlpha(1.0f);
+                tvTaskDate.setAlpha(1.0f);
+                priorityIndicator.setAlpha(1.0f);
+                btnMenu.setAlpha(1.0f);
+
+                // Remove efeito riscado
+                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+            }
 
             // Define cor do indicador de prioridade
-            updatePriorityIndicator(task);
-
-            isBinding = false; // Finaliza o bind
-
-            // Agora define o listener do checkbox
-            checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (!isBinding && listener != null) {
-                    listener.onTaskCompleteToggle(task);
-                }
-            });
-
-            // Listener alternativo para clique no checkbox (mais confiável)
-            checkboxCompleted.setOnClickListener(v -> {
-                if (!isBinding && listener != null) {
-                    listener.onTaskCompleteToggle(task);
-                }
-            });
-
-            // Listener para o menu
-            btnMenu.setOnClickListener(v -> showPopupMenu(v, task));
-
-            // Listener para clique longo no item (edição rápida)
-            itemView.setOnLongClickListener(v -> {
-                openEditActivity(task);
-                return true;
-            });
-        }
-
-        private void updateTaskVisualState(Task task) {
-            float alpha = task.isCompleted() ? 0.6f : 1.0f;
-
-            // Aplicar transparência
-            itemView.setAlpha(alpha);
-
-            // Aplicar strikethrough no título se concluída
-            if (task.isCompleted()) {
-                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
-            } else {
-                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() & (~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG));
-            }
-        }
-
-        private void updatePriorityIndicator(Task task) {
             int priorityColor;
             switch (task.getPriority()) {
                 case HIGH:
@@ -181,6 +143,22 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                     priorityColor = itemView.getContext().getColor(R.color.priority_medium);
             }
             priorityIndicator.setBackgroundColor(priorityColor);
+
+            // Listener para o checkbox
+            checkboxCompleted.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onTaskCompleteToggle(task);
+                }
+            });
+
+            // Listener para o menu
+            btnMenu.setOnClickListener(v -> showPopupMenu(v, task));
+
+            // Listener para clique longo no item (edição rápida)
+            itemView.setOnLongClickListener(v -> {
+                openEditActivity(task);
+                return true;
+            });
         }
 
         private void showPopupMenu(View view, Task task) {
@@ -220,56 +198,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             intent.putExtra(AddEditTaskActivity.EXTRA_TASK_DESCRIPTION, task.getDescription());
             intent.putExtra(AddEditTaskActivity.EXTRA_TASK_PRIORITY, task.getPriority().name());
             context.startActivity(intent);
-        }
-    }
-
-    // Classe para DiffUtil melhorar performance
-    private static class TaskDiffCallback extends DiffUtil.Callback {
-        private final List<Task> oldList;
-        private final List<Task> newList;
-
-        public TaskDiffCallback(List<Task> oldList, List<Task> newList) {
-            this.oldList = oldList;
-            this.newList = newList;
-        }
-
-        @Override
-        public int getOldListSize() {
-            return oldList.size();
-        }
-
-        @Override
-        public int getNewListSize() {
-            return newList.size();
-        }
-
-        @Override
-        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            Task oldTask = oldList.get(oldItemPosition);
-            Task newTask = newList.get(newItemPosition);
-            return oldTask.getId() == newTask.getId();
-        }
-
-        @Override
-        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            Task oldTask = oldList.get(oldItemPosition);
-            Task newTask = newList.get(newItemPosition);
-
-            // Comparação mais rigorosa para detectar mudanças
-            boolean titleSame = oldTask.getTitle().equals(newTask.getTitle());
-            boolean completedSame = oldTask.isCompleted() == newTask.isCompleted();
-            boolean prioritySame = oldTask.getPriority() == newTask.getPriority();
-
-            boolean descriptionSame =
-                    (oldTask.getDescription() == null && newTask.getDescription() == null) ||
-                            (oldTask.getDescription() != null && oldTask.getDescription().equals(newTask.getDescription()));
-
-            boolean completedAtSame =
-                    (oldTask.getCompletedAt() == null && newTask.getCompletedAt() == null) ||
-                            (oldTask.getCompletedAt() != null && newTask.getCompletedAt() != null &&
-                                    oldTask.getCompletedAt().getTime() == newTask.getCompletedAt().getTime());
-
-            return titleSame && completedSame && prioritySame && descriptionSame && completedAtSame;
         }
     }
 }

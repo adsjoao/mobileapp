@@ -55,7 +55,7 @@
         android:id="@+id/tv_developer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Desenvolvido por João Paulo"
+        android:text="Desenvolvido por João Paulo, Gelson Nobre e Lucas Junio"
         android:textColor="@android:color/white"
         android:textSize="14sp"
         android:layout_marginBottom="8dp"
