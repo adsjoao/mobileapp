@@ -21,14 +21,14 @@
             android:layout_marginEnd="12dp"
             android:background="@color/priority_medium" />
 
-        <!-- Checkbox simples -->
+        <!-- Checkbox -->
         <CheckBox
             android:id="@+id/checkbox_completed"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_marginEnd="12dp"
-            android:buttonTint="@color/checkbox_checked_color" />
+            android:buttonTint="@color/primary_color" />
 
         <!-- Conteúdo da Tarefa -->
         <LinearLayout

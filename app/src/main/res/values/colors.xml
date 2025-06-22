@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Cores existentes -->
+    <!-- Cores existentes originais -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -13,30 +13,20 @@
     <color name="priority_high">#E53935</color>
     <color name="priority_medium">#FF9800</color>
     <color name="priority_low">#4CAF50</color>
-    <color name="primary_color">#3F51B5</color>
+    <color name="primary_color">#2196F3</color>
 
-    <!-- Cores do Checkbox -->
-    <color name="checkbox_checked_color">#4CAF50</color>
-    <color name="checkbox_unchecked_color">#9E9E9E</color>
-    <color name="checkbox_checked_bg">#4CAF50</color>
-    <color name="checkbox_checked_border">#4CAF50</color>
-    <color name="checkbox_unchecked_border">#9E9E9E</color>
-
-    <!-- Cores adicionais para UI moderna -->
-    <color name="surface_variant">#F5F5F5</color>
-    <color name="on_surface_variant">#757575</color>
-
-    <!-- Cores que estavam faltando -->
-    <color name="primary_gray">#9E9E9E</color>
-    <color name="primary_gray_dark">#616161</color>
+    <!-- Cores necessárias -->
     <color name="accent_blue">#2196F3</color>
-    <color name="accent_blue_dark">#1976D2</color>
-    <color name="surface_light">#FFFFFF</color>
-    <color name="background_light">#FAFAFA</color>
-    <color name="text_primary_light">#212121</color>
-    <color name="error">#F44336</color>
-
-    <!-- Cores adicionais necessárias -->
-    <color name="gray_200">#EEEEEE</color>
+    <color name="primary_gray">#757575</color>
     <color name="success">#4CAF50</color>
+    <color name="background_light">#FFFFFF</color>
+    <color name="gray_200">#EEEEEE</color>
+    <color name="text_primary_light">#212121</color>
+    <color name="on_surface_variant">#49454F</color>
+    <color name="checkbox_checked_bg">#2196F3</color>
+    <color name="checkbox_checked_border">#1976D2</color>
+    <color name="checkbox_unchecked_border">#757575</color>
+
+    <!-- COR QUE ESTAVA FALTANDO -->
+    <color name="checkbox_checked_color">#2196F3</color>
 </resources>

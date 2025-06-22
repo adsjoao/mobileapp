@@ -1,9 +1,11 @@
-<!-- 2. THEMES.XML - Voltar ao original -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.TaskFlow" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Cores principais -->
+        <item name="colorPrimary">#2196F3</item>
+        <item name="colorOnPrimary">@android:color/white</item>
+        <item name="colorSecondary">#2196F3</item>
+        <item name="colorOnSecondary">@android:color/white</item>
     </style>
 
     <style name="Theme.TaskFlow" parent="Base.Theme.TaskFlow" />
