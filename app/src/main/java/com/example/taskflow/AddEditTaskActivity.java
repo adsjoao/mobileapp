@@ -1,11 +1,13 @@
 package com.example.taskflow;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import com.example.taskflow.data.database.TaskDatabase;
 import com.example.taskflow.data.entity.Task;
 import com.example.taskflow.data.entity.TaskPriority;
 import com.example.taskflow.viewmodel.TaskViewModel;
@@ -13,6 +15,10 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
 
 public class AddEditTaskActivity extends AppCompatActivity {
 
@@ -73,13 +79,15 @@ public class AddEditTaskActivity extends AppCompatActivity {
             toolbar.setTitle("Editar Tarefa");
             btnSave.setText("Atualizar");
 
+            // Preenche os campos com os dados da tarefa
             String title = getIntent().getStringExtra(EXTRA_TASK_TITLE);
             String description = getIntent().getStringExtra(EXTRA_TASK_DESCRIPTION);
             String priority = getIntent().getStringExtra(EXTRA_TASK_PRIORITY);
 
             etTitle.setText(title);
-            etDescription.setText(description);
+            etDescription.setText(description != null ? description : "");
 
+            // Seleciona a prioridade correta
             switch (priority) {
                 case "HIGH":
                     rbHigh.setChecked(true);
@@ -90,11 +98,13 @@ public class AddEditTaskActivity extends AppCompatActivity {
                 case "LOW":
                     rbLow.setChecked(true);
                     break;
+                default:
+                    rbMedium.setChecked(true);
             }
         } else {
             toolbar.setTitle("Nova Tarefa");
             btnSave.setText("Salvar");
-            rbMedium.setChecked(true);
+            rbMedium.setChecked(true); // Prioridade padrão
         }
     }
 
@@ -103,6 +113,7 @@ public class AddEditTaskActivity extends AppCompatActivity {
 
         btnSave.setOnClickListener(v -> saveTask());
 
+        // Remove erro do título quando o usuário digita
         etTitle.addTextChangedListener(new android.text.TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -121,11 +132,14 @@ public class AddEditTaskActivity extends AppCompatActivity {
         String title = etTitle.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
 
+        // Validação do título
         if (title.isEmpty()) {
             tilTitle.setError("Título é obrigatório");
+            etTitle.requestFocus();
             return;
         }
 
+        // Obtém a prioridade selecionada
         TaskPriority priority = TaskPriority.MEDIUM;
         int selectedId = rgPriority.getCheckedRadioButtonId();
         if (selectedId == R.id.rb_high) {
@@ -135,16 +149,29 @@ public class AddEditTaskActivity extends AppCompatActivity {
         }
 
         if (isEditMode) {
-            Task task = new Task(title, description, priority);
+            // Atualiza tarefa existente
+            Task task = new Task(title, description.isEmpty() ? null : description, priority);
             task.setId(taskId);
+
+            // Preserva as datas originais se necessário
+            // (o Room vai manter as datas ao fazer update)
+
             taskViewModel.update(task);
             Toast.makeText(this, "Tarefa atualizada com sucesso", Toast.LENGTH_SHORT).show();
         } else {
-            Task newTask = new Task(title, description, priority);
+            // Cria nova tarefa
+            Task newTask = new Task(title, description.isEmpty() ? null : description, priority);
             taskViewModel.insert(newTask);
             Toast.makeText(this, "Tarefa criada com sucesso", Toast.LENGTH_SHORT).show();
         }
 
         finish();
+    }
+
+    // Método para obter hora atual no fuso horário brasileiro
+    private Date getCurrentBrazilianTime() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"));
+        return calendar.getTime();
     }
 }

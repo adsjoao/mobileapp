@@ -7,26 +7,29 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageButton;
+import com.example.taskflow.data.entity.Task;
+import com.example.taskflow.data.entity.TaskPriority;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.taskflow.AddEditTaskActivity;
 import com.example.taskflow.R;
-import com.example.taskflow.data.entity.Task;
-import com.example.taskflow.data.entity.TaskPriority;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
     private List<Task> tasks = new ArrayList<>();
     private OnTaskActionListener listener;
     private Context context;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+    private SimpleDateFormat dateFormat;
 
     public interface OnTaskActionListener {
         void onTaskCompleteToggle(Task task);
@@ -36,6 +39,9 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     public TaskAdapter(Context context) {
         this.context = context;
+        // Configurar formatador de data para fuso horário brasileiro
+        this.dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("pt", "BR"));
+        this.dateFormat.setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"));
     }
 
     public void setOnTaskActionListener(OnTaskActionListener listener) {
@@ -61,9 +67,12 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         return tasks.size();
     }
 
-    public void setTasks(List<Task> tasks) {
-        this.tasks = tasks;
-        notifyDataSetChanged();
+    public void setTasks(List<Task> newTasks) {
+        // Usar DiffUtil para atualizações mais eficientes
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new TaskDiffCallback(this.tasks, newTasks));
+        this.tasks.clear();
+        this.tasks.addAll(newTasks);
+        diffResult.dispatchUpdatesTo(this);
     }
 
     class TaskViewHolder extends RecyclerView.ViewHolder {
@@ -85,22 +94,34 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         public void bind(Task task) {
             tvTaskTitle.setText(task.getTitle());
 
-            if (task.getDescription() != null && !task.getDescription().isEmpty()) {
+            // Mostra ou esconde descrição
+            if (task.getDescription() != null && !task.getDescription().trim().isEmpty()) {
                 tvTaskDescription.setText(task.getDescription());
                 tvTaskDescription.setVisibility(View.VISIBLE);
             } else {
                 tvTaskDescription.setVisibility(View.GONE);
             }
 
+            // Define a data com fuso horário correto
             if (task.isCompleted() && task.getCompletedAt() != null) {
                 tvTaskDate.setText("Concluída em: " + dateFormat.format(task.getCompletedAt()));
-            } else {
+            } else if (task.getCreatedAt() != null) {
                 tvTaskDate.setText("Criada em: " + dateFormat.format(task.getCreatedAt()));
+            } else {
+                tvTaskDate.setText("Data não disponível");
             }
 
+            // Define status de completado - remover listener temporariamente para evitar loops
+            checkboxCompleted.setOnCheckedChangeListener(null);
             checkboxCompleted.setChecked(task.isCompleted());
-            itemView.setAlpha(task.isCompleted() ? 0.6f : 1.0f);
 
+            // Ajusta opacidade para tarefas concluídas
+            float alpha = task.isCompleted() ? 0.6f : 1.0f;
+            itemView.setAlpha(alpha);
+            tvTaskTitle.setAlpha(alpha);
+            tvTaskDescription.setAlpha(alpha);
+
+            // Define cor do indicador de prioridade
             int priorityColor;
             switch (task.getPriority()) {
                 case HIGH:
@@ -114,14 +135,17 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             }
             priorityIndicator.setBackgroundColor(priorityColor);
 
-            checkboxCompleted.setOnClickListener(v -> {
+            // Reestabelece listener para o checkbox
+            checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (listener != null) {
                     listener.onTaskCompleteToggle(task);
                 }
             });
 
+            // Listener para o menu
             btnMenu.setOnClickListener(v -> showPopupMenu(v, task));
 
+            // Listener para clique longo no item (edição rápida)
             itemView.setOnLongClickListener(v -> {
                 openEditActivity(task);
                 return true;
@@ -132,6 +156,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             PopupMenu popup = new PopupMenu(view.getContext(), view);
             popup.inflate(R.menu.task_menu);
 
+            // Ajusta texto do menu baseado no status
             popup.getMenu().findItem(R.id.action_toggle_status)
                     .setTitle(task.isCompleted() ? "Marcar como pendente" : "Marcar como concluída");
 
@@ -164,6 +189,46 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             intent.putExtra(AddEditTaskActivity.EXTRA_TASK_DESCRIPTION, task.getDescription());
             intent.putExtra(AddEditTaskActivity.EXTRA_TASK_PRIORITY, task.getPriority().name());
             context.startActivity(intent);
+        }
+    }
+
+    // Classe para DiffUtil melhorar performance
+    private static class TaskDiffCallback extends DiffUtil.Callback {
+        private final List<Task> oldList;
+        private final List<Task> newList;
+
+        public TaskDiffCallback(List<Task> oldList, List<Task> newList) {
+            this.oldList = oldList;
+            this.newList = newList;
+        }
+
+        @Override
+        public int getOldListSize() {
+            return oldList.size();
+        }
+
+        @Override
+        public int getNewListSize() {
+            return newList.size();
+        }
+
+        @Override
+        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+            Task oldTask = oldList.get(oldItemPosition);
+            Task newTask = newList.get(newItemPosition);
+            return oldTask.getId() == newTask.getId();
+        }
+
+        @Override
+        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+            Task oldTask = oldList.get(oldItemPosition);
+            Task newTask = newList.get(newItemPosition);
+
+            return oldTask.getTitle().equals(newTask.getTitle()) &&
+                    oldTask.isCompleted() == newTask.isCompleted() &&
+                    oldTask.getPriority() == newTask.getPriority() &&
+                    ((oldTask.getDescription() == null && newTask.getDescription() == null) ||
+                            (oldTask.getDescription() != null && oldTask.getDescription().equals(newTask.getDescription())));
         }
     }
 }

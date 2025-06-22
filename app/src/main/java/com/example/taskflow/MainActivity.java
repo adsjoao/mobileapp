@@ -7,16 +7,19 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.taskflow.adapter.TaskAdapter;
 import com.example.taskflow.data.entity.Task;
+import com.example.taskflow.data.entity.TaskPriority;
 import com.example.taskflow.viewmodel.TaskViewModel;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.Date;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTaskActionListener {
 
@@ -27,6 +30,9 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     private TextView tvPendingCount, tvCompletedCount;
     private ChipGroup chipGroup;
     private Chip chipAll, chipPending, chipCompleted, chipHighPriority;
+
+    // LiveData atual para observar
+    private LiveData<List<Task>> currentTasksLiveData;
 
     private String currentFilter = "all";
 
@@ -68,12 +74,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     }
 
     private void setupObservers() {
-        taskViewModel.getAllTasks().observe(this, tasks -> {
-            if (tasks != null) {
-                taskAdapter.setTasks(tasks);
-            }
-        });
-
+        // Observar contadores do dashboard - estes sempre ficam observando
         taskViewModel.getPendingTasksCount().observe(this, count -> {
             if (count != null) {
                 tvPendingCount.setText(String.valueOf(count));
@@ -85,6 +86,9 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
                 tvCompletedCount.setText(String.valueOf(count));
             }
         });
+
+        // Inicializar com todas as tarefas
+        switchToFilter("all");
     }
 
     private void setupClickListeners() {
@@ -97,41 +101,77 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     private void setupFilterChips() {
         chipGroup.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.chip_all) {
-                currentFilter = "all";
-                taskViewModel.getAllTasks().observe(this, taskAdapter::setTasks);
+                switchToFilter("all");
             } else if (checkedId == R.id.chip_pending) {
-                currentFilter = "pending";
-                taskViewModel.getPendingTasks().observe(this, taskAdapter::setTasks);
+                switchToFilter("pending");
             } else if (checkedId == R.id.chip_completed) {
-                currentFilter = "completed";
-                taskViewModel.getCompletedTasks().observe(this, taskAdapter::setTasks);
+                switchToFilter("completed");
             } else if (checkedId == R.id.chip_high_priority) {
-                currentFilter = "high_priority";
-                taskViewModel.getHighPriorityTasks().observe(this, taskAdapter::setTasks);
+                switchToFilter("high_priority");
             }
         });
     }
 
+    private void switchToFilter(String filter) {
+        // Remove observador anterior se existir
+        if (currentTasksLiveData != null) {
+            currentTasksLiveData.removeObservers(this);
+        }
+
+        // Define novo LiveData baseado no filtro
+        switch (filter) {
+            case "all":
+                currentTasksLiveData = taskViewModel.getAllTasks();
+                break;
+            case "pending":
+                currentTasksLiveData = taskViewModel.getPendingTasks();
+                break;
+            case "completed":
+                currentTasksLiveData = taskViewModel.getCompletedTasks();
+                break;
+            case "high_priority":
+                currentTasksLiveData = taskViewModel.getHighPriorityTasks();
+                break;
+            default:
+                currentTasksLiveData = taskViewModel.getAllTasks();
+        }
+
+        // Observa o novo LiveData
+        currentTasksLiveData.observe(this, tasks -> {
+            if (tasks != null) {
+                taskAdapter.setTasks(tasks);
+            }
+        });
+
+        currentFilter = filter;
+    }
+
     @Override
     public void onTaskCompleteToggle(Task task) {
-        task.setCompleted(!task.isCompleted());
+        boolean wasCompleted = task.isCompleted();
+        task.setCompleted(!wasCompleted);
+
         if (task.isCompleted()) {
             task.setCompletedAt(new Date());
         } else {
             task.setCompletedAt(null);
         }
+
         taskViewModel.update(task);
-        Toast.makeText(this, task.isCompleted() ? "Tarefa concluída!" : "Tarefa reaberta!", Toast.LENGTH_SHORT).show();
+
+        // Feedback visual
+        String message = task.isCompleted() ? "Tarefa concluída!" : "Tarefa reaberta!";
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onTaskDelete(Task task) {
         new AlertDialog.Builder(this)
                 .setTitle("Excluir Tarefa")
-                .setMessage("Tem certeza que deseja excluir esta tarefa?")
+                .setMessage("Tem certeza que deseja excluir \"" + task.getTitle() + "\"?")
                 .setPositiveButton("Sim", (dialog, which) -> {
                     taskViewModel.delete(task);
-                    Toast.makeText(this, "Tarefa excluída!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Tarefa excluída", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Não", null)
                 .show();
@@ -139,6 +179,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
 
     @Override
     public void onTaskEdit(Task task) {
-        // Implementado para satisfazer a interface
+        // Método implementado para satisfazer a interface
+        // A edição real é feita pelo TaskAdapter abrindo AddEditTaskActivity
     }
 }
