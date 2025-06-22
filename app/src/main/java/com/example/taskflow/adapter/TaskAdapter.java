@@ -7,14 +7,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageButton;
-import com.example.taskflow.data.entity.Task;
-import com.example.taskflow.data.entity.TaskPriority;
+import com.example.taskflow.data.entity.Task;           // ← ADICIONE ESTE IMPORT
+import com.example.taskflow.data.entity.TaskPriority;  // ← ADICIONE ESTE IMPORT
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.taskflow.AddEditTaskActivity;
 import com.example.taskflow.R;
+import com.example.taskflow.data.database.TaskDatabase;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -86,6 +87,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         public void bind(Task task) {
             tvTaskTitle.setText(task.getTitle());
 
+            // Mostra ou esconde descrição
             if (task.getDescription() != null && !task.getDescription().isEmpty()) {
                 tvTaskDescription.setText(task.getDescription());
                 tvTaskDescription.setVisibility(View.VISIBLE);
@@ -93,15 +95,19 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tvTaskDescription.setVisibility(View.GONE);
             }
 
+// Define a data
             if (task.isCompleted() && task.getCompletedAt() != null) {
                 tvTaskDate.setText("Concluída em: " + dateFormat.format(task.getCompletedAt()));
             } else {
                 tvTaskDate.setText("Criada em: " + dateFormat.format(task.getCreatedAt()));
             }
-
+            // Define status de completado
             checkboxCompleted.setChecked(task.isCompleted());
+
+            // Ajusta opacidade para tarefas concluídas
             itemView.setAlpha(task.isCompleted() ? 0.6f : 1.0f);
 
+            // Define cor do indicador de prioridade
             int priorityColor;
             switch (task.getPriority()) {
                 case HIGH:
@@ -115,14 +121,17 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             }
             priorityIndicator.setBackgroundColor(priorityColor);
 
+            // Listener para o checkbox
             checkboxCompleted.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onTaskCompleteToggle(task);
                 }
             });
 
+            // Listener para o menu
             btnMenu.setOnClickListener(v -> showPopupMenu(v, task));
 
+            // Listener para clique longo no item (edição rápida)
             itemView.setOnLongClickListener(v -> {
                 openEditActivity(task);
                 return true;
@@ -130,19 +139,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
         private void showPopupMenu(View view, Task task) {
-            PopupMenu popup = new PopupMenu(context, view);
+            PopupMenu popup = new PopupMenu(view.getContext(), view);
             popup.inflate(R.menu.task_menu);
 
-            // FORÇA O MENU A SER SEMPRE VISÍVEL
-            try {
-                java.lang.reflect.Field fieldMPopup = popup.getClass().getDeclaredField("mPopup");
-                fieldMPopup.setAccessible(true);
-                Object mPopup = fieldMPopup.get(popup);
-                mPopup.getClass().getDeclaredMethod("setForceShowIcon", boolean.class).invoke(mPopup, true);
-            } catch (Exception e) {
-                // Ignora se não conseguir forçar os ícones
-            }
-
+            // Ajusta texto do menu baseado no status
             popup.getMenu().findItem(R.id.action_toggle_status)
                     .setTitle(task.isCompleted() ? "Marcar como pendente" : "Marcar como concluída");
 
