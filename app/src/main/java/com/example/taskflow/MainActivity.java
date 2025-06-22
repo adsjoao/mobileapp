@@ -18,8 +18,10 @@ import com.example.taskflow.viewmodel.TaskViewModel;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTaskActionListener {
 
@@ -35,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     private LiveData<List<Task>> currentTasksLiveData;
 
     private String currentFilter = "all";
+    private boolean isUpdatingTask = false; // Flag para evitar conflitos
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,6 +103,9 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
 
     private void setupFilterChips() {
         chipGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            // Evitar chamadas durante updates programáticos
+            if (isUpdatingTask) return;
+
             if (checkedId == R.id.chip_all) {
                 switchToFilter("all");
             } else if (checkedId == R.id.chip_pending) {
@@ -148,20 +154,33 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
 
     @Override
     public void onTaskCompleteToggle(Task task) {
-        boolean wasCompleted = task.isCompleted();
-        task.setCompleted(!wasCompleted);
+        if (isUpdatingTask) return; // Evita múltiplas chamadas simultâneas
 
-        if (task.isCompleted()) {
-            task.setCompletedAt(new Date());
+        isUpdatingTask = true;
+
+        // Cria uma cópia da tarefa para modificar
+        Task updatedTask = createTaskCopy(task);
+        boolean newCompletedState = !updatedTask.isCompleted();
+
+        updatedTask.setCompleted(newCompletedState);
+
+        if (newCompletedState) {
+            // Marca como concluída com timestamp atual
+            updatedTask.setCompletedAt(getCurrentBrazilianTime());
         } else {
-            task.setCompletedAt(null);
+            // Marca como pendente, remove timestamp de conclusão
+            updatedTask.setCompletedAt(null);
         }
 
-        taskViewModel.update(task);
+        // Atualiza no banco
+        taskViewModel.update(updatedTask);
 
         // Feedback visual
-        String message = task.isCompleted() ? "Tarefa concluída!" : "Tarefa reaberta!";
+        String message = newCompletedState ? "Tarefa concluída!" : "Tarefa reaberta!";
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+
+        // Reset flag após delay para evitar conflitos
+        recyclerView.postDelayed(() -> isUpdatingTask = false, 100);
     }
 
     @Override
@@ -181,5 +200,29 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     public void onTaskEdit(Task task) {
         // Método implementado para satisfazer a interface
         // A edição real é feita pelo TaskAdapter abrindo AddEditTaskActivity
+    }
+
+    // Método auxiliar para criar cópia da tarefa
+    private Task createTaskCopy(Task original) {
+        Task copy = new Task(original.getTitle(), original.getDescription(), original.getPriority());
+        copy.setId(original.getId());
+        copy.setCreatedAt(original.getCreatedAt());
+        copy.setCompleted(original.isCompleted());
+        copy.setCompletedAt(original.getCompletedAt());
+        return copy;
+    }
+
+    // Método para obter hora atual no fuso horário brasileiro
+    private Date getCurrentBrazilianTime() {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"));
+        return calendar.getTime();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Reset flag quando retorna para a activity
+        isUpdatingTask = false;
     }
 }

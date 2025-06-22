@@ -74,13 +74,7 @@ public class Task {
 
     public void setCompleted(boolean completed) {
         this.isCompleted = completed;
-
-        // Automaticamente define a data de conclusão
-        if (completed && this.completedAt == null) {
-            this.completedAt = getCurrentBrazilianTime();
-        } else if (!completed) {
-            this.completedAt = null;
-        }
+        // NÃO define automaticamente completedAt aqui para dar mais controle
     }
 
     public Date getCreatedAt() {
@@ -97,6 +91,28 @@ public class Task {
 
     public void setCompletedAt(Date completedAt) {
         this.completedAt = completedAt;
+    }
+
+    // Método para toggle status com controle completo
+    public void toggleCompletedStatus() {
+        this.isCompleted = !this.isCompleted;
+        if (this.isCompleted) {
+            this.completedAt = getCurrentBrazilianTime();
+        } else {
+            this.completedAt = null;
+        }
+    }
+
+    // Método para marcar como concluída
+    public void markAsCompleted() {
+        this.isCompleted = true;
+        this.completedAt = getCurrentBrazilianTime();
+    }
+
+    // Método para marcar como pendente
+    public void markAsPending() {
+        this.isCompleted = false;
+        this.completedAt = null;
     }
 
     @Override
@@ -119,6 +135,18 @@ public class Task {
                 ", title='" + title + '\'' +
                 ", isCompleted=" + isCompleted +
                 ", priority=" + priority +
+                ", createdAt=" + createdAt +
+                ", completedAt=" + completedAt +
                 '}';
+    }
+
+    // Método para criar uma cópia da tarefa
+    public Task copy() {
+        Task copy = new Task(this.title, this.description, this.priority);
+        copy.setId(this.id);
+        copy.setCreatedAt(this.createdAt);
+        copy.setCompleted(this.isCompleted);
+        copy.setCompletedAt(this.completedAt);
+        return copy;
     }
 }

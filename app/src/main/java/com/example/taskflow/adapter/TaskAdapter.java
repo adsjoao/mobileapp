@@ -68,6 +68,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     public void setTasks(List<Task> newTasks) {
+        if (newTasks == null) {
+            newTasks = new ArrayList<>();
+        }
+
         // Usar DiffUtil para atualizações mais eficientes
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new TaskDiffCallback(this.tasks, newTasks));
         this.tasks.clear();
@@ -80,6 +84,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         private CheckBox checkboxCompleted;
         private ImageButton btnMenu;
         private View priorityIndicator;
+        private boolean isBinding = false; // Flag para evitar loops
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -92,6 +97,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
         public void bind(Task task) {
+            isBinding = true; // Sinaliza que estamos fazendo bind
+
             tvTaskTitle.setText(task.getTitle());
 
             // Mostra ou esconde descrição
@@ -111,33 +118,28 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tvTaskDate.setText("Data não disponível");
             }
 
-            // Define status de completado - remover listener temporariamente para evitar loops
+            // Define status de completado SEM disparar listener
             checkboxCompleted.setOnCheckedChangeListener(null);
             checkboxCompleted.setChecked(task.isCompleted());
 
-            // Ajusta opacidade para tarefas concluídas
-            float alpha = task.isCompleted() ? 0.6f : 1.0f;
-            itemView.setAlpha(alpha);
-            tvTaskTitle.setAlpha(alpha);
-            tvTaskDescription.setAlpha(alpha);
+            // Ajusta visual para tarefas concluídas
+            updateTaskVisualState(task);
 
             // Define cor do indicador de prioridade
-            int priorityColor;
-            switch (task.getPriority()) {
-                case HIGH:
-                    priorityColor = itemView.getContext().getColor(R.color.priority_high);
-                    break;
-                case LOW:
-                    priorityColor = itemView.getContext().getColor(R.color.priority_low);
-                    break;
-                default:
-                    priorityColor = itemView.getContext().getColor(R.color.priority_medium);
-            }
-            priorityIndicator.setBackgroundColor(priorityColor);
+            updatePriorityIndicator(task);
 
-            // Reestabelece listener para o checkbox
+            isBinding = false; // Finaliza o bind
+
+            // Agora define o listener do checkbox
             checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (listener != null) {
+                if (!isBinding && listener != null) {
+                    listener.onTaskCompleteToggle(task);
+                }
+            });
+
+            // Listener alternativo para clique no checkbox (mais confiável)
+            checkboxCompleted.setOnClickListener(v -> {
+                if (!isBinding && listener != null) {
                     listener.onTaskCompleteToggle(task);
                 }
             });
@@ -150,6 +152,35 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 openEditActivity(task);
                 return true;
             });
+        }
+
+        private void updateTaskVisualState(Task task) {
+            float alpha = task.isCompleted() ? 0.6f : 1.0f;
+
+            // Aplicar transparência
+            itemView.setAlpha(alpha);
+
+            // Aplicar strikethrough no título se concluída
+            if (task.isCompleted()) {
+                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
+            } else {
+                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() & (~android.graphics.Paint.STRIKE_THRU_TEXT_FLAG));
+            }
+        }
+
+        private void updatePriorityIndicator(Task task) {
+            int priorityColor;
+            switch (task.getPriority()) {
+                case HIGH:
+                    priorityColor = itemView.getContext().getColor(R.color.priority_high);
+                    break;
+                case LOW:
+                    priorityColor = itemView.getContext().getColor(R.color.priority_low);
+                    break;
+                default:
+                    priorityColor = itemView.getContext().getColor(R.color.priority_medium);
+            }
+            priorityIndicator.setBackgroundColor(priorityColor);
         }
 
         private void showPopupMenu(View view, Task task) {
@@ -224,11 +255,21 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             Task oldTask = oldList.get(oldItemPosition);
             Task newTask = newList.get(newItemPosition);
 
-            return oldTask.getTitle().equals(newTask.getTitle()) &&
-                    oldTask.isCompleted() == newTask.isCompleted() &&
-                    oldTask.getPriority() == newTask.getPriority() &&
-                    ((oldTask.getDescription() == null && newTask.getDescription() == null) ||
-                            (oldTask.getDescription() != null && oldTask.getDescription().equals(newTask.getDescription())));
+            // Comparação mais rigorosa para detectar mudanças
+            boolean titleSame = oldTask.getTitle().equals(newTask.getTitle());
+            boolean completedSame = oldTask.isCompleted() == newTask.isCompleted();
+            boolean prioritySame = oldTask.getPriority() == newTask.getPriority();
+
+            boolean descriptionSame =
+                    (oldTask.getDescription() == null && newTask.getDescription() == null) ||
+                            (oldTask.getDescription() != null && oldTask.getDescription().equals(newTask.getDescription()));
+
+            boolean completedAtSame =
+                    (oldTask.getCompletedAt() == null && newTask.getCompletedAt() == null) ||
+                            (oldTask.getCompletedAt() != null && newTask.getCompletedAt() != null &&
+                                    oldTask.getCompletedAt().getTime() == newTask.getCompletedAt().getTime());
+
+            return titleSame && completedSame && prioritySame && descriptionSame && completedAtSame;
         }
     }
 }
