@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/primary_color"
+    android:padding="32dp">
+
+    <!-- Conteúdo principal centralizado -->
+    <LinearLayout
+        android:id="@+id/main_content"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <!-- Logo -->
+        <ImageView
+            android:id="@+id/iv_logo"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:src="@mipmap/ic_launcher"
+            android:layout_marginBottom="24dp"
+            android:contentDescription="Logo TaskFlow" />
+
+        <!-- Nome do App -->
+        <TextView
+            android:id="@+id/tv_app_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TaskFlow"
+            android:textColor="@android:color/white"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Subtítulo -->
+        <TextView
+            android:id="@+id/tv_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Gerencie suas tarefas com eficiência"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:alpha="0.8" />
+
+    </LinearLayout>
+
+    <!-- Informações dos desenvolvedores na parte inferior -->
+    <LinearLayout
+        android:id="@+id/bottom_content"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginBottom="32dp">
+
+        <TextView
+            android:id="@+id/tv_developed_by"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Desenvolvido por:"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:alpha="0.9"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tv_developers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="João Paulo Rocha, Lucas Junio e Gelson Nobre"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:alpha="0.9"
+            android:gravity="center"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tv_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Versão beta"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:alpha="0.7"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Progress Indicator -->
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/progress_indicator"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:indeterminate="true" />
+
+    </LinearLayout>
+
+</RelativeLayout>
