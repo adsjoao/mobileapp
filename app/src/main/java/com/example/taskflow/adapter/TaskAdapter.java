@@ -2,31 +2,34 @@ package com.example.taskflow.adapter;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageButton;
+import com.example.taskflow.data.entity.Task;
+import com.example.taskflow.data.entity.TaskPriority;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.taskflow.AddEditTaskActivity;
 import com.example.taskflow.R;
-import com.example.taskflow.data.entity.Task;
-import android.widget.CheckBox;
+import com.example.taskflow.data.database.TaskDatabase;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone; // ← ADICIONE ESTE IMPORT
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
     private List<Task> tasks = new ArrayList<>();
     private OnTaskActionListener listener;
     private Context context;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+    private SimpleDateFormat dateFormat; // ← REMOVA A INICIALIZAÇÃO INLINE
 
     public interface OnTaskActionListener {
         void onTaskCompleteToggle(Task task);
@@ -36,6 +39,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     public TaskAdapter(Context context) {
         this.context = context;
+
+        // ← ADICIONE ESTAS LINHAS PARA CONFIGURAR O FUSO HORÁRIO
+        this.dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("pt", "BR"));
+        this.dateFormat.setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"));
     }
 
     public void setOnTaskActionListener(OnTaskActionListener listener) {
@@ -62,7 +69,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     public void setTasks(List<Task> tasks) {
-        this.tasks = tasks != null ? tasks : new ArrayList<>();
+        this.tasks = tasks;
         notifyDataSetChanged();
     }
 
@@ -72,9 +79,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         private ImageButton btnMenu;
         private View priorityIndicator;
 
-        // Variável para controlar se estamos programaticamente alterando o checkbox
-        private boolean isUpdatingCheckbox = false;
-
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTaskTitle = itemView.findViewById(R.id.tv_task_title);
@@ -83,31 +87,9 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             checkboxCompleted = itemView.findViewById(R.id.checkbox_completed);
             btnMenu = itemView.findViewById(R.id.btn_menu);
             priorityIndicator = itemView.findViewById(R.id.priority_indicator);
-
-            // Configurar listener do checkbox UMA VEZ APENAS no construtor
-            setupCheckboxListener();
-        }
-
-        private void setupCheckboxListener() {
-            checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                // Ignorar se estamos atualizando programaticamente
-                if (isUpdatingCheckbox) {
-                    return;
-                }
-
-                // Verificar se temos uma posição válida
-                int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION && position < tasks.size()) {
-                    Task task = tasks.get(position);
-                    if (listener != null) {
-                        listener.onTaskCompleteToggle(task);
-                    }
-                }
-            });
         }
 
         public void bind(Task task) {
-            // Configurar textos
             tvTaskTitle.setText(task.getTitle());
 
             // Mostra ou esconde descrição
@@ -118,20 +100,18 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tvTaskDescription.setVisibility(View.GONE);
             }
 
-            // Define a data
+            // Define a data - AGORA COM FUSO HORÁRIO CORRETO
             if (task.isCompleted() && task.getCompletedAt() != null) {
                 tvTaskDate.setText("Concluída em: " + dateFormat.format(task.getCompletedAt()));
             } else {
                 tvTaskDate.setText("Criada em: " + dateFormat.format(task.getCreatedAt()));
             }
 
-            // IMPORTANTE: Atualizar checkbox SEM disparar o listener
-            isUpdatingCheckbox = true;
+            // Define status de completado
             checkboxCompleted.setChecked(task.isCompleted());
-            isUpdatingCheckbox = false;
 
-            // Aplicar efeitos visuais para tarefas concluídas
-            applyCompletedStyle(task.isCompleted());
+            // Ajusta opacidade para tarefas concluídas
+            itemView.setAlpha(task.isCompleted() ? 0.6f : 1.0f);
 
             // Define cor do indicador de prioridade
             int priorityColor;
@@ -147,34 +127,21 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             }
             priorityIndicator.setBackgroundColor(priorityColor);
 
-            // Remover listeners anteriores do botão de menu para evitar acúmulo
-            btnMenu.setOnClickListener(null);
+            // Listener para o checkbox
+            checkboxCompleted.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onTaskCompleteToggle(task);
+                }
+            });
+
+            // Listener para o menu
             btnMenu.setOnClickListener(v -> showPopupMenu(v, task));
 
-            // Remover listeners anteriores do item para evitar acúmulo
-            itemView.setOnLongClickListener(null);
+            // Listener para clique longo no item (edição rápida)
             itemView.setOnLongClickListener(v -> {
                 openEditActivity(task);
                 return true;
             });
-        }
-
-        private void applyCompletedStyle(boolean isCompleted) {
-            if (isCompleted) {
-                // Aplicar efeito de tarefa concluída
-                itemView.setAlpha(0.7f);
-                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-                if (tvTaskDescription.getVisibility() == View.VISIBLE) {
-                    tvTaskDescription.setPaintFlags(tvTaskDescription.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-                }
-            } else {
-                // Remover efeito de tarefa concluída
-                itemView.setAlpha(1.0f);
-                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
-                if (tvTaskDescription.getVisibility() == View.VISIBLE) {
-                    tvTaskDescription.setPaintFlags(tvTaskDescription.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
-                }
-            }
         }
 
         private void showPopupMenu(View view, Task task) {
