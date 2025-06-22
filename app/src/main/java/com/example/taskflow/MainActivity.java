@@ -32,8 +32,10 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     private Chip chipAll, chipPending, chipCompleted, chipHighPriority;
 
     private String currentFilter = "all";
-    private LiveData<List<Task>> currentTasksLiveData;
-    private Observer<List<Task>> currentTasksObserver;
+
+    // Observer atual para gerenciar corretamente
+    private Observer<List<Task>> currentTaskObserver;
+    private LiveData<List<Task>> currentLiveData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     }
 
     private void setupObservers() {
-        // Observar contadores do dashboard (estes nunca mudam)
+        // Observar contadores do dashboard
         taskViewModel.getPendingTasksCount().observe(this, count -> {
             if (count != null) {
                 tvPendingCount.setText(String.valueOf(count));
@@ -86,8 +88,8 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
             }
         });
 
-        // Configurar observer inicial para "Todas"
-        applyFilter("all");
+        // Configurar observador inicial para "todas as tarefas"
+        setupTaskObserver(taskViewModel.getAllTasks());
     }
 
     private void setupClickListeners() {
@@ -99,96 +101,83 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
 
     private void setupFilterChips() {
         chipGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            // Remove observer anterior para evitar conflitos
-            removeCurrentObserver();
+            LiveData<List<Task>> newLiveData = null;
 
-            // Aplica o novo filtro
             if (checkedId == R.id.chip_all) {
-                applyFilter("all");
+                currentFilter = "all";
+                newLiveData = taskViewModel.getAllTasks();
             } else if (checkedId == R.id.chip_pending) {
-                applyFilter("pending");
+                currentFilter = "pending";
+                newLiveData = taskViewModel.getPendingTasks();
             } else if (checkedId == R.id.chip_completed) {
-                applyFilter("completed");
+                currentFilter = "completed";
+                newLiveData = taskViewModel.getCompletedTasks();
             } else if (checkedId == R.id.chip_high_priority) {
-                applyFilter("high_priority");
+                currentFilter = "high_priority";
+                newLiveData = taskViewModel.getHighPriorityTasks();
+            }
+
+            if (newLiveData != null) {
+                setupTaskObserver(newLiveData);
             }
         });
     }
 
-    private void removeCurrentObserver() {
-        if (currentTasksLiveData != null && currentTasksObserver != null) {
-            currentTasksLiveData.removeObserver(currentTasksObserver);
+    /**
+     * Método para gerenciar corretamente os observadores de tarefas
+     */
+    private void setupTaskObserver(LiveData<List<Task>> newLiveData) {
+        // Remove o observador anterior se existir
+        if (currentLiveData != null && currentTaskObserver != null) {
+            currentLiveData.removeObserver(currentTaskObserver);
         }
-    }
 
-    private void applyFilter(String filter) {
-        currentFilter = filter;
-
-        // Remove observer anterior
-        removeCurrentObserver();
-
-        // Cria novo observer
-        currentTasksObserver = tasks -> {
+        // Cria um novo observador
+        currentTaskObserver = tasks -> {
             if (tasks != null) {
+                // Limpar a lista antes de definir as novas tarefas
+                taskAdapter.setTasks(null);
+                // Definir as novas tarefas
                 taskAdapter.setTasks(tasks);
             }
         };
 
-        // Aplica o filtro correto
-        switch (filter) {
-            case "all":
-                currentTasksLiveData = taskViewModel.getAllTasks();
-                break;
-            case "pending":
-                currentTasksLiveData = taskViewModel.getPendingTasks();
-                break;
-            case "completed":
-                currentTasksLiveData = taskViewModel.getCompletedTasks();
-                break;
-            case "high_priority":
-                currentTasksLiveData = taskViewModel.getHighPriorityTasks();
-                break;
-            default:
-                currentTasksLiveData = taskViewModel.getAllTasks();
-        }
-
-        // Observa o novo LiveData
-        currentTasksLiveData.observe(this, currentTasksObserver);
+        // Configura o novo observador
+        currentLiveData = newLiveData;
+        currentLiveData.observe(this, currentTaskObserver);
     }
 
     // Implementação da interface TaskAdapter.OnTaskActionListener
+
     @Override
     public void onTaskCompleteToggle(Task task) {
-        // Alterna o status
-        task.setCompleted(!task.isCompleted());
+        // Criar uma nova instância da task para evitar problemas de referência
+        Task updatedTask = new Task(task.getTitle(), task.getDescription(), task.getPriority());
+        updatedTask.setId(task.getId());
+        updatedTask.setCreatedAt(task.getCreatedAt());
+        updatedTask.setCompleted(!task.isCompleted());
 
-        // Define ou remove a data de conclusão
-        if (task.isCompleted()) {
-            task.setCompletedAt(new Date());
+        if (updatedTask.isCompleted()) {
+            updatedTask.setCompletedAt(new Date());
         } else {
-            task.setCompletedAt(null);
+            updatedTask.setCompletedAt(null);
         }
 
-        // Atualiza no banco
-        taskViewModel.update(task);
+        taskViewModel.update(updatedTask);
 
-        // Feedback para o usuário
-        String message = task.isCompleted() ? "Tarefa concluída" : "Tarefa reaberta";
+        // Mostra feedback para o usuário
+        String message = updatedTask.isCompleted() ? "Tarefa concluída!" : "Tarefa reaberta!";
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-
-        // IMPORTANTE: O filtro atual já será automaticamente atualizado
-        // porque estamos observando LiveData que reage às mudanças no banco
     }
 
     @Override
     public void onTaskDelete(Task task) {
         new AlertDialog.Builder(this)
                 .setTitle("Excluir Tarefa")
-                .setMessage("Tem certeza que deseja excluir \"" + task.getTitle() + "\"?")
+                .setMessage("Tem certeza que deseja excluir esta tarefa?\n\n" + task.getTitle())
                 .setPositiveButton("Sim", (dialog, which) -> {
                     taskViewModel.delete(task);
-                    Toast.makeText(this, "Tarefa excluída", Toast.LENGTH_SHORT).show();
-                    // A lista será automaticamente atualizada pelo LiveData
+                    Toast.makeText(this, "Tarefa excluída!", Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton("Não", null)
                 .show();
@@ -196,18 +185,16 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
 
     @Override
     public void onTaskEdit(Task task) {
-        Intent intent = new Intent(this, AddEditTaskActivity.class);
-        intent.putExtra(AddEditTaskActivity.EXTRA_TASK_ID, task.getId());
-        intent.putExtra(AddEditTaskActivity.EXTRA_TASK_TITLE, task.getTitle());
-        intent.putExtra(AddEditTaskActivity.EXTRA_TASK_DESCRIPTION, task.getDescription());
-        intent.putExtra(AddEditTaskActivity.EXTRA_TASK_PRIORITY, task.getPriority().name());
-        startActivity(intent);
+        // Método implementado para satisfazer a interface
+        // A edição real é feita pelo TaskAdapter abrindo AddEditTaskActivity
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Limpa observers para evitar memory leaks
-        removeCurrentObserver();
+        // Limpa o observador atual para evitar vazamentos de memória
+        if (currentLiveData != null && currentTaskObserver != null) {
+            currentLiveData.removeObserver(currentTaskObserver);
+        }
     }
 }

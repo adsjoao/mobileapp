@@ -21,16 +21,14 @@
             android:layout_marginEnd="12dp"
             android:background="@color/priority_medium" />
 
-        <!-- Checkbox Material Design -->
-        <com.google.android.material.checkbox.MaterialCheckBox
+        <!-- Checkbox simples -->
+        <CheckBox
             android:id="@+id/checkbox_completed"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_marginEnd="12dp"
-            android:buttonTint="@color/checkbox_tint_selector"
-            android:scaleX="1.2"
-            android:scaleY="1.2" />
+            android:buttonTint="@color/checkbox_checked_color" />
 
         <!-- Conteúdo da Tarefa -->
         <LinearLayout
@@ -46,7 +44,7 @@
                 android:text="Título da Tarefa"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="@color/task_pending_text" />
+                android:textColor="@android:color/black" />
 
             <TextView
                 android:id="@+id/tv_task_description"
@@ -55,7 +53,6 @@
                 android:text="Descrição da tarefa"
                 android:textSize="14sp"
                 android:layout_marginTop="4dp"
-                android:textColor="@color/task_pending_text"
                 android:visibility="gone" />
 
             <TextView
