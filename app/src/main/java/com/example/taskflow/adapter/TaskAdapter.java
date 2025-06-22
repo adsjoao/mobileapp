@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import androidx.appcompat.view.ContextThemeWrapper;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
@@ -143,8 +144,16 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             });
         }
 
+        // Substitua o método showPopupMenu na classe TaskAdapter.java
+
         private void showPopupMenu(View view, Task task) {
-            PopupMenu popup = new PopupMenu(view.getContext(), view);
+            // Criar ContextThemeWrapper para forçar tema claro
+            ContextThemeWrapper wrapper = new ContextThemeWrapper(view.getContext(), R.style.PopupMenuTheme);
+            PopupMenu popup = new PopupMenu(wrapper, view);
+
+            // Alternativamente, use esta linha se a primeira não funcionar:
+            // PopupMenu popup = new PopupMenu(view.getContext(), view);
+
             popup.inflate(R.menu.task_menu);
 
             // Ajusta texto do menu baseado no status
