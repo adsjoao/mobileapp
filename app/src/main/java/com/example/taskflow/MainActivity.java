@@ -70,13 +70,6 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     }
 
     private void setupObservers() {
-        // Observar todas as tarefas
-        taskViewModel.getAllTasks().observe(this, tasks -> {
-            if (tasks != null) {
-                taskAdapter.setTasks(tasks);
-            }
-        });
-
         // Observar contadores do dashboard
         taskViewModel.getPendingTasksCount().observe(this, count -> {
             if (count != null) {
@@ -89,6 +82,9 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
                 tvCompletedCount.setText(String.valueOf(count));
             }
         });
+
+        // CORREÇÃO: Observar todas as tarefas por padrão
+        applyCurrentFilter();
     }
 
     private void setupClickListeners() {
@@ -102,29 +98,72 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
         chipGroup.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.chip_all) {
                 currentFilter = "all";
-                taskViewModel.getAllTasks().observe(this, taskAdapter::setTasks);
             } else if (checkedId == R.id.chip_pending) {
                 currentFilter = "pending";
-                taskViewModel.getPendingTasks().observe(this, taskAdapter::setTasks);
             } else if (checkedId == R.id.chip_completed) {
                 currentFilter = "completed";
-                taskViewModel.getCompletedTasks().observe(this, taskAdapter::setTasks);
             } else if (checkedId == R.id.chip_high_priority) {
                 currentFilter = "high_priority";
-                taskViewModel.getHighPriorityTasks().observe(this, taskAdapter::setTasks);
             }
+            applyCurrentFilter();
         });
     }
 
+    // CORREÇÃO: Método centralizado para aplicar filtros
+    private void applyCurrentFilter() {
+        switch (currentFilter) {
+            case "all":
+                taskViewModel.getAllTasks().observe(this, tasks -> {
+                    if (tasks != null) {
+                        taskAdapter.setTasks(tasks);
+                    }
+                });
+                break;
+            case "pending":
+                taskViewModel.getPendingTasks().observe(this, tasks -> {
+                    if (tasks != null) {
+                        taskAdapter.setTasks(tasks);
+                    }
+                });
+                break;
+            case "completed":
+                taskViewModel.getCompletedTasks().observe(this, tasks -> {
+                    if (tasks != null) {
+                        taskAdapter.setTasks(tasks);
+                    }
+                });
+                break;
+            case "high_priority":
+                taskViewModel.getHighPriorityTasks().observe(this, tasks -> {
+                    if (tasks != null) {
+                        taskAdapter.setTasks(tasks);
+                    }
+                });
+                break;
+        }
+    }
+
+    // CORREÇÃO: Implementação correta do toggle de status
     @Override
     public void onTaskCompleteToggle(Task task) {
-        task.setCompleted(!task.isCompleted());
-        if (task.isCompleted()) {
+        // Inverte o status atual
+        boolean newStatus = !task.isCompleted();
+        task.setCompleted(newStatus);
+
+        // Define a data de conclusão
+        if (newStatus) {
             task.setCompletedAt(new Date());
+            Toast.makeText(this, "Tarefa marcada como concluída", Toast.LENGTH_SHORT).show();
         } else {
             task.setCompletedAt(null);
+            Toast.makeText(this, "Tarefa marcada como pendente", Toast.LENGTH_SHORT).show();
         }
+
+        // Atualiza no banco de dados
         taskViewModel.update(task);
+
+        // CORREÇÃO: Reaplica o filtro atual para atualizar a lista
+        applyCurrentFilter();
     }
 
     @Override
@@ -134,6 +173,9 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
                 .setMessage("Tem certeza que deseja excluir esta tarefa?")
                 .setPositiveButton("Sim", (dialog, which) -> {
                     taskViewModel.delete(task);
+                    Toast.makeText(this, "Tarefa excluída", Toast.LENGTH_SHORT).show();
+                    // Reaplica o filtro atual
+                    applyCurrentFilter();
                 })
                 .setNegativeButton("Não", null)
                 .show();
@@ -141,7 +183,14 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
 
     @Override
     public void onTaskEdit(Task task) {
-        // Método implementado para satisfazer a interface
-        // A edição real é feita pelo TaskAdapter abrindo AddEditTaskActivity
+        // A edição é tratada pelo TaskAdapter abrindo a AddEditTaskActivity
+        // Este método está aqui apenas para satisfazer a interface
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // CORREÇÃO: Recarrega os dados quando volta para a tela
+        applyCurrentFilter();
     }
 }

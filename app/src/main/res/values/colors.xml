@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Cores existentes originais -->
+    <!-- Cores existentes -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -13,20 +13,59 @@
     <color name="priority_high">#E53935</color>
     <color name="priority_medium">#FF9800</color>
     <color name="priority_low">#4CAF50</color>
-    <color name="primary_color">#2196F3</color>
 
-    <!-- Cores necessárias -->
-    <color name="accent_blue">#2196F3</color>
-    <color name="primary_gray">#757575</color>
+    <!-- Cores Principais Atualizadas -->
+    <color name="primary_color">#1976D2</color>
+    <color name="primary_dark">#1565C0</color>
+    <color name="primary_light">#E3F2FD</color>
+    <color name="accent_color">#03DAC6</color>
+
+    <!-- Cores de Background -->
+    <color name="background_light">#F5F5F5</color>
+    <color name="surface_color">#FFFFFF</color>
+    <color name="on_surface">#212121</color>
+
+    <!-- Gradiente para Header -->
+    <color name="gradient_start">#1976D2</color>
+    <color name="gradient_end">#1565C0</color>
+
+    <!-- Cores adicionais para componentes -->
     <color name="success">#4CAF50</color>
-    <color name="background_light">#FFFFFF</color>
-    <color name="gray_200">#EEEEEE</color>
-    <color name="text_primary_light">#212121</color>
-    <color name="on_surface_variant">#49454F</color>
-    <color name="checkbox_checked_bg">#2196F3</color>
-    <color name="checkbox_checked_border">#1976D2</color>
-    <color name="checkbox_unchecked_border">#757575</color>
+    <color name="error">#F44336</color>
+    <color name="warning">#FF9800</color>
+    <color name="info">#2196F3</color>
 
-    <!-- COR QUE ESTAVA FALTANDO -->
-    <color name="checkbox_checked_color">#2196F3</color>
+    <!-- Cores para checkbox -->
+    <color name="checkbox_checked_bg">#4CAF50</color>
+    <color name="checkbox_unchecked_bg">#757575</color>
+    <color name="checkbox_checked_border">#388E3C</color>
+    <color name="checkbox_unchecked_border">#BDBDBD</color>
+
+    <!-- Cores para chips -->
+    <color name="accent_blue">#2196F3</color>
+    <color name="light_blue">#E3F2FD</color>
+    <color name="chip_background_default">#F5F5F5</color>
+    <color name="chip_background_selected">#E3F2FD</color>
+    <color name="chip_stroke_default">#E0E0E0</color>
+    <color name="chip_stroke_selected">#2196F3</color>
+
+    <!-- Cores para cards e backgrounds -->
+    <color name="gray_50">#FAFAFA</color>
+    <color name="gray_100">#F5F5F5</color>
+    <color name="gray_200">#EEEEEE</color>
+    <color name="gray_300">#E0E0E0</color>
+    <color name="gray_400">#BDBDBD</color>
+    <color name="gray_500">#9E9E9E</color>
+    <color name="gray_600">#757575</color>
+    <color name="gray_700">#616161</color>
+    <color name="gray_800">#424242</color>
+    <color name="gray_900">#212121</color>
+
+    <!-- Cores Material Design 3 -->
+    <color name="surface_variant">#F3F0F4</color>
+    <color name="on_surface_variant">#49454F</color>
+    <color name="outline">#79757F</color>
+    <color name="outline_variant">#CAC4D0</color>
+    <color name="inverse_surface">#313033</color>
+    <color name="inverse_on_surface">#F4EFF4</color>
 </resources>

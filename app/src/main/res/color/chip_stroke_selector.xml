@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Estado selecionado -->
+    <item android:state_checked="true" android:color="@color/chip_stroke_selected" />
+
+    <!-- Estado pressionado -->
+    <item android:state_pressed="true" android:color="@color/accent_blue" />
+
+    <!-- Estado padrão -->
+    <item android:color="@color/chip_stroke_default" />
+</selector>

@@ -7,8 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.ImageButton;
-import com.example.taskflow.data.entity.Task;           // ← ADICIONE ESTE IMPORT
-import com.example.taskflow.data.entity.TaskPriority;  // ← ADICIONE ESTE IMPORT
+import com.example.taskflow.data.entity.Task;
+import com.example.taskflow.data.entity.TaskPriority;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -22,13 +22,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
     private List<Task> tasks = new ArrayList<>();
     private OnTaskActionListener listener;
     private Context context;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
+    private SimpleDateFormat dateFormat;
 
     public interface OnTaskActionListener {
         void onTaskCompleteToggle(Task task);
@@ -38,6 +39,9 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     public TaskAdapter(Context context) {
         this.context = context;
+        // CORREÇÃO: Configurar formato de data com timezone brasileiro
+        this.dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm", new Locale("pt", "BR"));
+        this.dateFormat.setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"));
     }
 
     public void setOnTaskActionListener(OnTaskActionListener listener) {
@@ -95,12 +99,13 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tvTaskDescription.setVisibility(View.GONE);
             }
 
-// Define a data
+            // CORREÇÃO: Formatação de data com timezone correto
             if (task.isCompleted() && task.getCompletedAt() != null) {
                 tvTaskDate.setText("Concluída em: " + dateFormat.format(task.getCompletedAt()));
             } else {
                 tvTaskDate.setText("Criada em: " + dateFormat.format(task.getCreatedAt()));
             }
+
             // Define status de completado
             checkboxCompleted.setChecked(task.isCompleted());
 
