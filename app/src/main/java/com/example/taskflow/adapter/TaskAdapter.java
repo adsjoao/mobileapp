@@ -5,9 +5,7 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
@@ -16,11 +14,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.taskflow.AddEditTaskActivity;
 import com.example.taskflow.R;
 import com.example.taskflow.data.entity.Task;
-import com.example.taskflow.data.entity.TaskPriority;
+import com.google.android.material.checkbox.MaterialCheckBox;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -71,8 +68,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     class TaskViewHolder extends RecyclerView.ViewHolder {
         private TextView tvTaskTitle, tvTaskDescription, tvTaskDate;
-        private FrameLayout checkboxContainer;
-        private ImageView checkboxBackground, checkboxCheck;
+        private MaterialCheckBox checkboxCompleted;
         private ImageButton btnMenu;
         private View priorityIndicator;
 
@@ -81,9 +77,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             tvTaskTitle = itemView.findViewById(R.id.tv_task_title);
             tvTaskDescription = itemView.findViewById(R.id.tv_task_description);
             tvTaskDate = itemView.findViewById(R.id.tv_task_date);
-            checkboxContainer = itemView.findViewById(R.id.checkbox_container);
-            checkboxBackground = itemView.findViewById(R.id.checkbox_background);
-            checkboxCheck = itemView.findViewById(R.id.checkbox_check);
+            checkboxCompleted = itemView.findViewById(R.id.checkbox_completed);
             btnMenu = itemView.findViewById(R.id.btn_menu);
             priorityIndicator = itemView.findViewById(R.id.priority_indicator);
         }
@@ -121,14 +115,17 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             }
             priorityIndicator.setBackgroundColor(priorityColor);
 
-            // Atualiza aparência do checkbox customizado
-            updateCheckboxAppearance(task.isCompleted());
+            // Define status do checkbox
+            checkboxCompleted.setChecked(task.isCompleted());
 
             // Aplica estilo visual baseado no status da tarefa
             applyTaskCompletionStyle(task.isCompleted());
 
+            // Remove listener anterior para evitar conflitos
+            checkboxCompleted.setOnCheckedChangeListener(null);
+
             // Listener para o checkbox
-            checkboxContainer.setOnClickListener(v -> {
+            checkboxCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (listener != null) {
                     listener.onTaskCompleteToggle(task);
                 }
@@ -144,20 +141,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             });
         }
 
-        private void updateCheckboxAppearance(boolean isCompleted) {
-            if (isCompleted) {
-                checkboxBackground.setSelected(true);
-                checkboxCheck.setVisibility(View.VISIBLE);
-            } else {
-                checkboxBackground.setSelected(false);
-                checkboxCheck.setVisibility(View.GONE);
-            }
-        }
-
         private void applyTaskCompletionStyle(boolean isCompleted) {
             if (isCompleted) {
                 // Estilo para tarefa concluída
-                itemView.setAlpha(0.7f);
+                itemView.setAlpha(0.6f);
                 tvTaskTitle.setTextColor(ContextCompat.getColor(context, R.color.task_completed_text));
                 tvTaskDescription.setTextColor(ContextCompat.getColor(context, R.color.task_completed_text));
 

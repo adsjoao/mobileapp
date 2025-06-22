@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arquivo: app/src/main/res/color/checkbox_tint_selector.xml -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Estado marcado -->
+    <item android:state_checked="true" android:color="@color/checkbox_checked_bg" />
+
+    <!-- Estado desmarcado -->
+    <item android:color="@color/checkbox_unchecked_border" />
+
+</selector>
