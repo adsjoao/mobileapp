@@ -2,7 +2,6 @@ package com.example.taskflow;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.PopupMenu;  // ← IMPORT ADICIONADO
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -13,13 +12,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.taskflow.adapter.TaskAdapter;
 import com.example.taskflow.data.entity.Task;
-import com.example.taskflow.data.entity.TaskPriority;
 import com.example.taskflow.viewmodel.TaskViewModel;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.Date;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTaskActionListener {
 
@@ -71,14 +68,12 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
     }
 
     private void setupObservers() {
-        // Observar todas as tarefas
         taskViewModel.getAllTasks().observe(this, tasks -> {
             if (tasks != null) {
                 taskAdapter.setTasks(tasks);
             }
         });
 
-        // Observar contadores do dashboard
         taskViewModel.getPendingTasksCount().observe(this, count -> {
             if (count != null) {
                 tvPendingCount.setText(String.valueOf(count));
@@ -117,7 +112,6 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
         });
     }
 
-    // Implementação da interface TaskAdapter.OnTaskActionListener
     @Override
     public void onTaskCompleteToggle(Task task) {
         task.setCompleted(!task.isCompleted());
@@ -145,7 +139,6 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.OnTas
 
     @Override
     public void onTaskEdit(Task task) {
-        // Método implementado para satisfazer a interface
-        // A edição real é feita pelo TaskAdapter abrindo AddEditTaskActivity
+        // Implementado para satisfazer a interface
     }
 }

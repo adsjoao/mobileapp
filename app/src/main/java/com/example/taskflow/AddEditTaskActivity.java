@@ -31,7 +31,6 @@ public class AddEditTaskActivity extends AppCompatActivity {
     private TaskViewModel taskViewModel;
     private long taskId = -1;
     private boolean isEditMode = false;
-    private Task originalTask; // Para preservar todos os dados originais
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,35 +73,28 @@ public class AddEditTaskActivity extends AppCompatActivity {
             toolbar.setTitle("Editar Tarefa");
             btnSave.setText("Atualizar");
 
-            // Carrega a tarefa original do banco de dados
-            taskViewModel.getTaskById(taskId).observe(this, task -> {
-                if (task != null) {
-                    originalTask = task;
-                    populateFields(task);
-                }
-            });
+            String title = getIntent().getStringExtra(EXTRA_TASK_TITLE);
+            String description = getIntent().getStringExtra(EXTRA_TASK_DESCRIPTION);
+            String priority = getIntent().getStringExtra(EXTRA_TASK_PRIORITY);
+
+            etTitle.setText(title);
+            etDescription.setText(description);
+
+            switch (priority) {
+                case "HIGH":
+                    rbHigh.setChecked(true);
+                    break;
+                case "MEDIUM":
+                    rbMedium.setChecked(true);
+                    break;
+                case "LOW":
+                    rbLow.setChecked(true);
+                    break;
+            }
         } else {
             toolbar.setTitle("Nova Tarefa");
             btnSave.setText("Salvar");
-            rbMedium.setChecked(true); // Prioridade padrão
-        }
-    }
-
-    private void populateFields(Task task) {
-        etTitle.setText(task.getTitle());
-        etDescription.setText(task.getDescription() != null ? task.getDescription() : "");
-
-        // Seleciona a prioridade correta
-        switch (task.getPriority()) {
-            case HIGH:
-                rbHigh.setChecked(true);
-                break;
-            case MEDIUM:
-                rbMedium.setChecked(true);
-                break;
-            case LOW:
-                rbLow.setChecked(true);
-                break;
+            rbMedium.setChecked(true);
         }
     }
 
@@ -111,7 +103,6 @@ public class AddEditTaskActivity extends AppCompatActivity {
 
         btnSave.setOnClickListener(v -> saveTask());
 
-        // Remove erro do título quando o usuário digita
         etTitle.addTextChangedListener(new android.text.TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -130,14 +121,11 @@ public class AddEditTaskActivity extends AppCompatActivity {
         String title = etTitle.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
 
-        // Validação do título
         if (title.isEmpty()) {
             tilTitle.setError("Título é obrigatório");
-            etTitle.requestFocus();
             return;
         }
 
-        // Obtém a prioridade selecionada
         TaskPriority priority = TaskPriority.MEDIUM;
         int selectedId = rgPriority.getCheckedRadioButtonId();
         if (selectedId == R.id.rb_high) {
@@ -146,19 +134,13 @@ public class AddEditTaskActivity extends AppCompatActivity {
             priority = TaskPriority.LOW;
         }
 
-        if (isEditMode && originalTask != null) {
-            // Atualiza os dados editáveis mantendo os originais
-            originalTask.setTitle(title);
-            originalTask.setDescription(description.isEmpty() ? null : description);
-            originalTask.setPriority(priority);
-
-            // NÃO modifica: id, createdAt, isCompleted, completedAt
-
-            taskViewModel.update(originalTask);
+        if (isEditMode) {
+            Task task = new Task(title, description, priority);
+            task.setId(taskId);
+            taskViewModel.update(task);
             Toast.makeText(this, "Tarefa atualizada com sucesso", Toast.LENGTH_SHORT).show();
         } else {
-            // Cria nova tarefa
-            Task newTask = new Task(title, description.isEmpty() ? null : description, priority);
+            Task newTask = new Task(title, description, priority);
             taskViewModel.insert(newTask);
             Toast.makeText(this, "Tarefa criada com sucesso", Toast.LENGTH_SHORT).show();
         }

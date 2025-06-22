@@ -25,12 +25,6 @@ public interface TaskDao {
     @Query("SELECT * FROM tasks ORDER BY createdAt DESC")
     LiveData<List<Task>> getAllTasks();
 
-    @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")
-    LiveData<Task> getTaskById(long id);
-
-    @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")
-    Task getTaskByIdSync(long id);
-
     @Query("SELECT * FROM tasks WHERE isCompleted = :isCompleted ORDER BY createdAt DESC")
     LiveData<List<Task>> getTasksByStatus(boolean isCompleted);
 

@@ -1,58 +1,58 @@
-package com.example.taskflow.viewmodel;
+package com.example.taskflow.repository;
 
 import android.app.Application;
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
-import com.example.taskflow.repository.TaskRepository;
+import com.example.taskflow.data.dao.TaskDao;
+import com.example.taskflow.data.database.TaskDatabase;
 import com.example.taskflow.data.entity.Task;
 import com.example.taskflow.data.entity.TaskPriority;
-import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class TaskViewModel extends AndroidViewModel {
+public class TaskRepository {
 
-    private TaskRepository repository;
+    private TaskDao taskDao;
     private LiveData<List<Task>> allTasks;
     private LiveData<Integer> pendingTasksCount;
     private LiveData<Integer> completedTasksCount;
+    private ExecutorService executorService;
 
-    public TaskViewModel(@NonNull Application application) {
-        super(application);
-        repository = new TaskRepository(application);
-        allTasks = repository.getAllTasks();
-        pendingTasksCount = repository.getPendingTasksCount();
-        completedTasksCount = repository.getCompletedTasksCount();
+    public TaskRepository(Application application) {
+        TaskDatabase database = TaskDatabase.getDatabase(application);
+        taskDao = database.taskDao();
+        allTasks = taskDao.getAllTasks();
+        pendingTasksCount = taskDao.getPendingTasksCount();
+        completedTasksCount = taskDao.getCompletedTasksCount();
+        executorService = Executors.newSingleThreadExecutor();
     }
 
-    // Métodos CRUD
     public void insert(Task task) {
-        repository.insert(task);
+        executorService.execute(() -> taskDao.insert(task));
     }
 
     public void update(Task task) {
-        repository.update(task);
+        executorService.execute(() -> taskDao.update(task));
     }
 
     public void delete(Task task) {
-        repository.delete(task);
+        executorService.execute(() -> taskDao.delete(task));
     }
 
-    // Getters para LiveData
     public LiveData<List<Task>> getAllTasks() {
         return allTasks;
     }
 
     public LiveData<List<Task>> getPendingTasks() {
-        return repository.getPendingTasks();
+        return taskDao.getTasksByStatus(false);
     }
 
     public LiveData<List<Task>> getCompletedTasks() {
-        return repository.getCompletedTasks();
+        return taskDao.getTasksByStatus(true);
     }
 
     public LiveData<List<Task>> getHighPriorityTasks() {
-        return repository.getHighPriorityTasks();
+        return taskDao.getTasksByPriority(TaskPriority.HIGH);
     }
 
     public LiveData<Integer> getPendingTasksCount() {
@@ -61,20 +61,5 @@ public class TaskViewModel extends AndroidViewModel {
 
     public LiveData<Integer> getCompletedTasksCount() {
         return completedTasksCount;
-    }
-
-    // MÉTODOS AUXILIARES ADICIONADOS
-    public void toggleTaskCompletion(Task task) {
-        task.setCompleted(!task.isCompleted());
-        if (task.isCompleted()) {
-            task.setCompletedAt(new Date());
-        } else {
-            task.setCompletedAt(null);
-        }
-        update(task);
-    }
-
-    public void deleteTask(Task task) {
-        delete(task);
     }
 }

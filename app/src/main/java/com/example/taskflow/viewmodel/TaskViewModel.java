@@ -7,8 +7,7 @@ import androidx.lifecycle.LiveData;
 import com.example.taskflow.repository.TaskRepository;
 import com.example.taskflow.data.entity.Task;
 import com.example.taskflow.data.entity.TaskPriority;
-import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.ViewModelProvider;
+import java.util.Date;
 import java.util.List;
 
 public class TaskViewModel extends AndroidViewModel {
@@ -26,7 +25,6 @@ public class TaskViewModel extends AndroidViewModel {
         completedTasksCount = repository.getCompletedTasksCount();
     }
 
-    // Métodos CRUD
     public void insert(Task task) {
         repository.insert(task);
     }
@@ -39,12 +37,6 @@ public class TaskViewModel extends AndroidViewModel {
         repository.delete(task);
     }
 
-    // Buscar tarefa por ID
-    public LiveData<Task> getTaskById(long id) {
-        return repository.getTaskById(id);
-    }
-
-    // Getters para LiveData
     public LiveData<List<Task>> getAllTasks() {
         return allTasks;
     }
@@ -67,5 +59,19 @@ public class TaskViewModel extends AndroidViewModel {
 
     public LiveData<Integer> getCompletedTasksCount() {
         return completedTasksCount;
+    }
+
+    public void toggleTaskCompletion(Task task) {
+        task.setCompleted(!task.isCompleted());
+        if (task.isCompleted()) {
+            task.setCompletedAt(new Date());
+        } else {
+            task.setCompletedAt(null);
+        }
+        update(task);
+    }
+
+    public void deleteTask(Task task) {
+        delete(task);
     }
 }
