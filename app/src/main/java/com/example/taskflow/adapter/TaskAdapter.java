@@ -2,7 +2,6 @@ package com.example.taskflow.adapter;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -87,7 +86,6 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         public void bind(Task task) {
             tvTaskTitle.setText(task.getTitle());
 
-            // Mostra ou esconde descrição
             if (task.getDescription() != null && !task.getDescription().isEmpty()) {
                 tvTaskDescription.setText(task.getDescription());
                 tvTaskDescription.setVisibility(View.VISIBLE);
@@ -95,42 +93,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
                 tvTaskDescription.setVisibility(View.GONE);
             }
 
-            // Define a data
             if (task.isCompleted() && task.getCompletedAt() != null) {
                 tvTaskDate.setText("Concluída em: " + dateFormat.format(task.getCompletedAt()));
             } else {
                 tvTaskDate.setText("Criada em: " + dateFormat.format(task.getCreatedAt()));
             }
 
-            // Define status de completado
             checkboxCompleted.setChecked(task.isCompleted());
+            itemView.setAlpha(task.isCompleted() ? 0.6f : 1.0f);
 
-            // CORREÇÃO: Aplica estilo visual para tarefas concluídas sem afetar o botão de menu
-            if (task.isCompleted()) {
-                // Aplica opacidade apenas aos textos
-                tvTaskTitle.setAlpha(0.6f);
-                tvTaskDescription.setAlpha(0.6f);
-                tvTaskDate.setAlpha(0.6f);
-                priorityIndicator.setAlpha(0.6f);
-
-                // Adiciona efeito riscado no título
-                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-
-                // Mantém o botão de menu com opacidade normal
-                btnMenu.setAlpha(1.0f);
-            } else {
-                // Remove opacidade e efeito riscado
-                tvTaskTitle.setAlpha(1.0f);
-                tvTaskDescription.setAlpha(1.0f);
-                tvTaskDate.setAlpha(1.0f);
-                priorityIndicator.setAlpha(1.0f);
-                btnMenu.setAlpha(1.0f);
-
-                // Remove efeito riscado
-                tvTaskTitle.setPaintFlags(tvTaskTitle.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-            }
-
-            // Define cor do indicador de prioridade
             int priorityColor;
             switch (task.getPriority()) {
                 case HIGH:
@@ -144,17 +115,14 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             }
             priorityIndicator.setBackgroundColor(priorityColor);
 
-            // Listener para o checkbox
             checkboxCompleted.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onTaskCompleteToggle(task);
                 }
             });
 
-            // Listener para o menu
             btnMenu.setOnClickListener(v -> showPopupMenu(v, task));
 
-            // Listener para clique longo no item (edição rápida)
             itemView.setOnLongClickListener(v -> {
                 openEditActivity(task);
                 return true;
@@ -162,10 +130,19 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         }
 
         private void showPopupMenu(View view, Task task) {
-            PopupMenu popup = new PopupMenu(view.getContext(), view);
+            PopupMenu popup = new PopupMenu(context, view);
             popup.inflate(R.menu.task_menu);
 
-            // Ajusta texto do menu baseado no status
+            // FORÇA O MENU A SER SEMPRE VISÍVEL
+            try {
+                java.lang.reflect.Field fieldMPopup = popup.getClass().getDeclaredField("mPopup");
+                fieldMPopup.setAccessible(true);
+                Object mPopup = fieldMPopup.get(popup);
+                mPopup.getClass().getDeclaredMethod("setForceShowIcon", boolean.class).invoke(mPopup, true);
+            } catch (Exception e) {
+                // Ignora se não conseguir forçar os ícones
+            }
+
             popup.getMenu().findItem(R.id.action_toggle_status)
                     .setTitle(task.isCompleted() ? "Marcar como pendente" : "Marcar como concluída");
 
